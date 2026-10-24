@@ -216,8 +216,6 @@ exploration:
 custom-enchants:
   enabled: true
   shop: true
-  # Сколько особых чар может быть на одном предмете.
-  max-enchants-per-item: 5
   # Шанс выловить книгу особых чар с «Опытным рыбаком» (0.005 = 0,5% за улов).
   bookfisher-chance: 0.005
   timber-max-logs: 80

@@ -147,7 +147,7 @@ public final class CustomEnchantService implements Module, Listener {
     private final java.util.Random rnd = new java.util.Random();
     private final Set<UUID> busy = ConcurrentHashMap.newKeySet();
     private boolean enabled = true, shopEnabled = true;
-    private int maxPerItem = 5, timberMax = 80;
+    private int timberMax = 80;
     private double bookChance = 0.005;
     private final Map<String, Long> prices = new ConcurrentHashMap<>();
 
@@ -171,7 +171,6 @@ public final class CustomEnchantService implements Module, Listener {
         YamlConfiguration c = plugin.configs().get("items.yml");
         enabled = c.getBoolean("custom-enchants.enabled", true);
         shopEnabled = c.getBoolean("custom-enchants.shop", true);
-        maxPerItem = Math.max(1, c.getInt("custom-enchants.max-enchants-per-item", 5));
         bookChance = Math.max(0, Math.min(1, c.getDouble("custom-enchants.bookfisher-chance", 0.005)));
         timberMax = Math.max(8, Math.min(256, c.getInt("custom-enchants.timber-max-logs", 80)));
         prices.clear();
@@ -359,7 +358,6 @@ public final class CustomEnchantService implements Module, Listener {
         if (!en.target().fits(target.getType())) { Msg.error(p, "ce.not-fit", "Эти чары подходят только для: {t}.", "t", en.target().display); return; }
         Map<String, Integer> map = read(target);
         int cur = map.getOrDefault(en.id(), 0);
-        if (cur == 0 && map.size() >= maxPerItem) { Msg.error(p, "ce.too-many", "На предмете уже максимум особых чар ({n}).", "n", maxPerItem); return; }
         int next = cur == lvl && cur < en.max() ? cur + 1 : Math.max(cur, lvl);
         if (next == cur) { Msg.error(p, "ce.already", "На предмете уже есть эти чары такого уровня."); return; }
         ItemStack res = target.clone();

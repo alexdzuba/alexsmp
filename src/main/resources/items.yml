@@ -218,6 +218,9 @@ custom-enchants:
   shop: true
   # Шанс выловить книгу особых чар с «Опытным рыбаком» (0.005 = 0,5% за улов).
   bookfisher-chance: 0.005
+  # «Грабитель»: сколько процентов баланса убитого игрока забирает убийца и максимум за одно убийство.
+  robber-percent: 2
+  robber-max: 250000
   timber-max-logs: 80
   prices:
     autosmelt: 60000
@@ -243,3 +246,14 @@ custom-enchants:
     fisher: 25000
     bookfisher: 100000
     unbreakable: 400000
+    autorepair: 120000
+    blind: 30000
+    nighthunter: 30000
+    robber: 200000
+    berserk: 100000
+    fireaura: 60000
+    steadfast: 40000
+    feather: 60000
+    lavawalker: 150000
+    diver: 50000
+    satiety: 40000

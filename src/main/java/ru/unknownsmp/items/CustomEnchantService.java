@@ -122,6 +122,17 @@ public final class CustomEnchantService implements Module, Listener {
         reg(new Ench("fisher", "Рыбак", 3, Target.ROD, 25_000, "Клюёт быстрее, чаще ловятся сокровища"));
         reg(new Ench("bookfisher", "Опытный рыбак", 1, Target.ROD, 100_000, "Небольшой шанс выловить книгу особых чар"));
         reg(new Ench("unbreakable", "Неломайка", 1, Target.ANY, 400_000, "Предмет не ломается: останавливается на 1 прочности"));
+        reg(new Ench("autorepair", "Автопочинка", 2, Target.ANY, 120_000, "Чинится на 1/2 ед. прочности каждые 5 сек, пока в инвентаре"));
+        reg(new Ench("blind", "Ослепление", 2, Target.SWORD, 30_000, "Шанс 10% за уровень ослепить цель на 2 сек"));
+        reg(new Ench("nighthunter", "Ночной охотник", 3, Target.SWORD, 30_000, "+5% урона за уровень ночью"));
+        reg(new Ench("robber", "Грабитель", 1, Target.SWORD, 200_000, "Убийство игрока забирает 2% его баланса"));
+        reg(new Ench("berserk", "Берсерк", 1, Target.CHESTPLATE, 100_000, "Ниже 5 сердец — Сила I на 8 сек (откат 1 мин)"));
+        reg(new Ench("fireaura", "Огненная аура", 1, Target.CHESTPLATE, 60_000, "Поджигает того, кто бьёт вас вблизи"));
+        reg(new Ench("steadfast", "Стойкость", 2, Target.LEGGINGS, 40_000, "−25% отбрасывания за уровень"));
+        reg(new Ench("feather", "Перо", 1, Target.BOOTS, 60_000, "Нет урона от падения"));
+        reg(new Ench("lavawalker", "Лавоход", 1, Target.BOOTS, 150_000, "Ходьба по лаве: под ногами магма (присесть — выключить)"));
+        reg(new Ench("diver", "Водолаз", 1, Target.HELMET, 50_000, "Дыхание, зрение и быстрое копание под водой"));
+        reg(new Ench("satiety", "Сытость", 1, Target.HELMET, 40_000, "Голод падает вдвое медленнее"));
     }
 
     private static void reg(Ench e) { ALL.put(e.id(), e); }
@@ -149,6 +160,8 @@ public final class CustomEnchantService implements Module, Listener {
     private boolean enabled = true, shopEnabled = true;
     private int timberMax = 80;
     private double bookChance = 0.005;
+    private double robberPercent = 0.02;
+    private long robberCap = 250_000;
     private final Map<String, Long> prices = new ConcurrentHashMap<>();
 
     public CustomEnchantService(UnknownSMP plugin) {
@@ -164,6 +177,7 @@ public final class CustomEnchantService implements Module, Listener {
         reload();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         Tasks.timer(40, 40, this::effectsTick);
+        Tasks.timer(100, 100, this::repairTick);
     }
 
     @Override
@@ -172,6 +186,8 @@ public final class CustomEnchantService implements Module, Listener {
         enabled = c.getBoolean("custom-enchants.enabled", true);
         shopEnabled = c.getBoolean("custom-enchants.shop", true);
         bookChance = Math.max(0, Math.min(1, c.getDouble("custom-enchants.bookfisher-chance", 0.005)));
+        robberPercent = Math.max(0, Math.min(100, c.getDouble("custom-enchants.robber-percent", 2))) / 100.0;
+        robberCap = Math.max(0, c.getLong("custom-enchants.robber-max", 250_000));
         timberMax = Math.max(8, Math.min(256, c.getInt("custom-enchants.timber-max-logs", 80)));
         prices.clear();
         for (Ench e : ALL.values()) prices.put(e.id(), Math.max(1, c.getLong("custom-enchants.prices." + e.id(), e.basePrice())));
@@ -546,6 +562,8 @@ public final class CustomEnchantService implements Module, Listener {
         if (damageGuard.contains(p.getUniqueId())) return;
         Map<String, Integer> m = read(p.getInventory().getItemInMainHand());
         if (m.isEmpty()) return;
+        int blind = m.getOrDefault("blind", 0);
+        if (blind > 0 && rnd.nextDouble() < 0.10 * blind) victim.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0));
         int poison = m.getOrDefault("poison", 0);
         if (poison > 0 && rnd.nextDouble() < 0.10 * poison) victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0));
         int bleed = m.getOrDefault("bleed", 0);
@@ -577,7 +595,10 @@ public final class CustomEnchantService implements Module, Listener {
             ItemStack head = headOf(e.getEntity());
             if (head != null) e.getDrops().add(head);
         }
-        if (e.getEntity() instanceof Player) return;
+        if (e.getEntity() instanceof Player victim) {
+            if (m.containsKey("robber") && victim != k) rob(k, victim);
+            return;
+        }
         int w = m.getOrDefault("wisdom", 0);
         if (w > 0) e.setDroppedExp((int) Math.round(e.getDroppedExp() * (1 + 0.5 * w)));
         if (on(weapon, m, "telekinesis")) {
@@ -595,7 +616,13 @@ public final class CustomEnchantService implements Module, Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void execute(EntityDamageByEntityEvent e) {
         if (!enabled || !(e.getDamager() instanceof Player p) || !(e.getEntity() instanceof LivingEntity v)) return;
-        int ex = level(p.getInventory().getItemInMainHand(), "execute");
+        Map<String, Integer> wm = read(p.getInventory().getItemInMainHand());
+        int nh = wm.getOrDefault("nighthunter", 0);
+        if (nh > 0 && p.getWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL) {
+            long t = p.getWorld().getTime();
+            if (t >= 13000 && t <= 23000) e.setDamage(e.getDamage() * (1 + 0.05 * nh));
+        }
+        int ex = wm.getOrDefault("execute", 0);
         if (ex <= 0) return;
         var attr = v.getAttribute(Attribute.MAX_HEALTH);
         double max = attr == null ? 20 : attr.getValue();
@@ -606,8 +633,118 @@ public final class CustomEnchantService implements Module, Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void defend(org.bukkit.event.entity.EntityDamageEvent e) {
         if (!enabled || !(e.getEntity() instanceof Player p)) return;
+        if (e.getCause() == org.bukkit.event.entity.EntityDamageEvent.DamageCause.FALL && level(p.getInventory().getBoots(), "feather") > 0) {
+            e.setCancelled(true);
+            return;
+        }
         int st = level(p.getInventory().getLeggings(), "steelskin");
         if (st > 0) e.setDamage(e.getDamage() * (1 - 0.05 * st));
+        if (e instanceof EntityDamageByEntityEvent be && be.getDamager() instanceof LivingEntity att && att != p
+                && level(p.getInventory().getChestplate(), "fireaura") > 0) {
+            att.setFireTicks(Math.max(att.getFireTicks(), 60));
+        }
+    }
+
+    private final Map<UUID, Long> berserkCd = new ConcurrentHashMap<>();
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void berserk(org.bukkit.event.entity.EntityDamageEvent e) {
+        if (!enabled || !(e.getEntity() instanceof Player p)) return;
+        double after = p.getHealth() - e.getFinalDamage();
+        if (after <= 0 || after >= 10) return;
+        if (level(p.getInventory().getChestplate(), "berserk") <= 0) return;
+        long now = System.currentTimeMillis();
+        Long cd = berserkCd.get(p.getUniqueId());
+        if (cd != null && cd > now) return;
+        berserkCd.put(p.getUniqueId(), now + 60_000);
+        Tasks.later(1, () -> {
+            if (!p.isOnline() || p.isDead()) return;
+            p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 160, 0));
+            Msg.actionBar(p, "&c✦ Берсерк! &7Сила I на 8 сек (откат 1 мин)");
+            Msg.sound(p, Sound.ENTITY_RAVAGER_ROAR, 0.5f, 1.3f);
+        });
+    }
+
+    /** Грабитель: часть баланса убитого игрока переходит убийце (не в дуэлях и не между соклановцами). */
+    private void rob(Player killer, Player victim) {
+        if (plugin.duels() != null && plugin.duels().isDuelWorld(victim.getWorld())) return;
+        var kc = plugin.clans() == null ? null : plugin.clans().clanOf(killer);
+        if (kc != null && kc == plugin.clans().clanOf(victim)) return;
+        long bal = plugin.economy().balance(victim);
+        long amount = Math.min(robberCap, (long) Math.floor(bal * robberPercent));
+        if (amount < 1) return;
+        UUID v = victim.getUniqueId(), k = killer.getUniqueId();
+        Tasks.then(plugin.db().tx(c -> {
+            long vb = EconomyService.debit(c, v, amount, "robbed", killer.getName());
+            long kb = EconomyService.credit(c, k, amount, "robber", victim.getName());
+            return new long[]{vb, kb};
+        }), r -> {
+            plugin.economy().apply(v, r[0]);
+            plugin.economy().apply(k, r[1]);
+            Msg.send(killer, "ce.robbed", "&6Грабитель: &f+{a} &7с {v}", "a", Text.money(amount), "v", victim.getName());
+            Msg.send(victim, "ce.robbed-victim", "&c{k} ограбил вас на {a}.", "k", killer.getName(), "a", Text.money(amount));
+            plugin.logs().log(killer, "economy", "robber", killer.getLocation(), victim.getName() + " " + amount);
+        }, null);
+    }
+
+    /** Сытость: голод падает вдвое медленнее. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void hunger(org.bukkit.event.entity.FoodLevelChangeEvent e) {
+        if (!enabled || !(e.getEntity() instanceof Player p)) return;
+        if (e.getFoodLevel() >= p.getFoodLevel()) return;
+        if (level(p.getInventory().getHelmet(), "satiety") > 0 && rnd.nextBoolean()) e.setCancelled(true);
+    }
+
+    // Лавоход: временная магма под ногами, через 4 секунды снова лава. Ломать её нельзя.
+    private final Set<Block> lavaTemp = ConcurrentHashMap.newKeySet();
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void lavaWalk(org.bukkit.event.player.PlayerMoveEvent e) {
+        if (!enabled) return;
+        org.bukkit.Location f = e.getFrom(), t = e.getTo();
+        if (f.getBlockX() == t.getBlockX() && f.getBlockZ() == t.getBlockZ() && f.getBlockY() == t.getBlockY()) return;
+        Player p = e.getPlayer();
+        if (p.isSneaking() || p.isFlying() || level(p.getInventory().getBoots(), "lavawalker") <= 0) return;
+        Block under = t.getBlock().getRelative(BlockFace.DOWN);
+        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+            if (dx * dx + dz * dz > 5) continue;
+            Block b = under.getRelative(dx, 0, dz);
+            if (b.getType() != Material.LAVA || !(b.getBlockData() instanceof org.bukkit.block.data.Levelled lv) || lv.getLevel() != 0) continue;
+            if (!b.getRelative(BlockFace.UP).getType().isAir()) continue;
+            if (plugin.claims() != null) {
+                var cl = plugin.claims().claimAt(b);
+                var mine = plugin.clans().clanOf(p);
+                if (cl != null && (mine == null || mine.id != cl.clanId())) continue;
+            }
+            b.setType(Material.MAGMA_BLOCK, false);
+            lavaTemp.add(b);
+            Tasks.later(80 + rnd.nextInt(20), () -> {
+                if (lavaTemp.remove(b) && b.getType() == Material.MAGMA_BLOCK) b.setType(Material.LAVA, true);
+            });
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void lavaTempBreak(BlockBreakEvent e) {
+        if (lavaTemp.contains(e.getBlock())) e.setCancelled(true);
+    }
+
+    /** Автопочинка: каждые 5 секунд чинит предметы в инвентаре. */
+    private void repairTick() {
+        if (!enabled) return;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            var inv = p.getInventory();
+            for (int i = 0; i < inv.getSize(); i++) {
+                ItemStack it = inv.getItem(i);
+                if (it == null || it.getType().getMaxDurability() <= 0 || !it.hasItemMeta()) continue;
+                if (!(it.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable d) || d.getDamage() <= 0) continue;
+                int lvl = level(it, "autorepair");
+                if (lvl <= 0) continue;
+                d.setDamage(Math.max(0, d.getDamage() - lvl));
+                it.setItemMeta(d);
+                inv.setItem(i, it);
+            }
+        }
     }
 
     private final Map<UUID, Long> secondWindCd = new ConcurrentHashMap<>();
@@ -775,9 +912,26 @@ public final class CustomEnchantService implements Module, Listener {
                 if (level(a, "pyro") > 0) { p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 400, 0, true, false, true)); break; }
             }
             if (stealthUntil.containsKey(p.getUniqueId()) && level(p.getInventory().getHelmet(), "stealth") <= 0) endStealth(p);
+            if (level(p.getInventory().getHelmet(), "diver") > 0)
+                p.addPotionEffect(new PotionEffect(PotionEffectType.CONDUIT_POWER, 100, 0, true, false, true));
+            applySteadfast(p, level(p.getInventory().getLeggings(), "steadfast"));
             int haste = level(p.getInventory().getItemInMainHand(), "haste");
             if (haste > 0) p.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 60, haste - 1, true, false, true));
         }
+    }
+
+    private static final org.bukkit.NamespacedKey STEADFAST_KEY = new org.bukkit.NamespacedKey("unknownsmp", "ce_steadfast");
+
+    /** Стойкость: модификатор сопротивления отбрасыванию, пока надеты поножи с чарами. */
+    private void applySteadfast(Player p, int lvl) {
+        var attr = p.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
+        if (attr == null) return;
+        org.bukkit.attribute.AttributeModifier cur = null;
+        for (var mod : attr.getModifiers()) if (STEADFAST_KEY.equals(mod.getKey())) { cur = mod; break; }
+        double want = 0.25 * lvl;
+        if (cur != null && Math.abs(cur.getAmount() - want) < 1e-6 && lvl > 0) return;
+        if (cur != null) attr.removeModifier(cur);
+        if (lvl > 0) attr.addModifier(new org.bukkit.attribute.AttributeModifier(STEADFAST_KEY, want, org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER));
     }
 
     // ------------------------------------------------------------------ Магазин

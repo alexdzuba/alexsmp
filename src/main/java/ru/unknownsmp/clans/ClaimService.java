@@ -329,6 +329,23 @@ public final class ClaimService implements Module, Listener {
         if (c != null && !canIn(p, c, Act.ENTITY)) { e.setCancelled(true); deny(p, c); }
     }
 
+    /** Вагонетки и лодки на территории: чужие не ломают. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void vehicleDamage(org.bukkit.event.vehicle.VehicleDamageEvent e) {
+        Player p = attacker(e.getAttacker());
+        if (p == null) return;
+        Claim c = claimAt(e.getVehicle().getLocation());
+        if (c != null && !canIn(p, c, Act.ENTITY)) { e.setCancelled(true); deny(p, c); }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void vehicleDestroy(org.bukkit.event.vehicle.VehicleDestroyEvent e) {
+        Player p = attacker(e.getAttacker());
+        if (p == null) return;
+        Claim c = claimAt(e.getVehicle().getLocation());
+        if (c != null && !canIn(p, c, Act.ENTITY)) { e.setCancelled(true); deny(p, c); }
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void hanging(HangingBreakByEntityEvent e) {
         Player p = attacker(e.getRemover());

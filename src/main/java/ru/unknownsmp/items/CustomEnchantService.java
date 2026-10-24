@@ -118,14 +118,14 @@ public final class CustomEnchantService implements Module, Listener {
         reg(new Ench("secondwind", "Второе дыхание", 1, Target.CHESTPLATE, 120_000, "Ниже 4 сердец — Регенерация II на 5 сек (откат 2 мин)"));
         reg(new Ench("steelskin", "Стальная кожа", 2, Target.LEGGINGS, 50_000, "−5% входящего урона за уровень"));
         reg(new Ench("pyro", "Пиро", 1, Target.ARMOR, 250_000, "Иммунитет к огню и лаве"));
-        reg(new Ench("stealth", "Невидимка", 1, Target.HELMET, 150_000, "Присесть с пустой рукой — невидимость до 10 сек, броня скрыта (откат 30 сек)"));
+        reg(new Ench("stealth", "Невидимка", 1, Target.HELMET, 150_000, "Присесть с пустой рукой — невидимость до 10 сек (откат 30 сек); сталактиты и сталагмиты наносят лишь 5% урона"));
         reg(new Ench("fisher", "Рыбак", 3, Target.ROD, 25_000, "Клюёт быстрее, чаще ловятся сокровища"));
         reg(new Ench("bookfisher", "Опытный рыбак", 1, Target.ROD, 100_000, "Небольшой шанс выловить книгу особых чар"));
         reg(new Ench("unbreakable", "Неломайка", 1, Target.ANY, 400_000, "Предмет не ломается: останавливается на 1 прочности"));
         reg(new Ench("autorepair", "Автопочинка", 2, Target.ANY, 120_000, "Чинится на 1/2 ед. прочности каждые 5 сек, пока в инвентаре"));
         reg(new Ench("blind", "Ослепление", 2, Target.SWORD, 30_000, "Шанс 10% за уровень ослепить цель на 2 сек"));
         reg(new Ench("nighthunter", "Ночной охотник", 3, Target.SWORD, 30_000, "+5% урона за уровень ночью"));
-        reg(new Ench("robber", "Грабитель", 1, Target.SWORD, 200_000, "Убийство игрока забирает 2% его баланса"));
+        reg(new Ench("robber", "Грабитель", 1, Target.SWORD, 200_000, "Убийство игрока забирает 2% его баланса; вагонетки, лодки, стойки и рамки ломаются с одного удара"));
         reg(new Ench("berserk", "Берсерк", 1, Target.CHESTPLATE, 100_000, "Ниже 5 сердец — Сила I на 8 сек (откат 1 мин)"));
         reg(new Ench("fireaura", "Огненная аура", 1, Target.CHESTPLATE, 60_000, "Поджигает того, кто бьёт вас вблизи"));
         reg(new Ench("steadfast", "Стойкость", 2, Target.LEGGINGS, 40_000, "−25% отбрасывания за уровень"));
@@ -641,6 +641,12 @@ public final class CustomEnchantService implements Module, Listener {
         }
         int st = level(p.getInventory().getLeggings(), "steelskin");
         if (st > 0) e.setDamage(e.getDamage() * (1 - 0.05 * st));
+        // Невидимка пассивно защищает голову: сталактиты и сталагмиты — только 5% урона.
+        if (level(p.getInventory().getHelmet(), "stealth") > 0) {
+            var type = e.getDamageSource().getDamageType();
+            if (type == org.bukkit.damage.DamageType.FALLING_STALACTITE || type == org.bukkit.damage.DamageType.STALAGMITE)
+                e.setDamage(e.getDamage() * 0.05);
+        }
         if (e instanceof EntityDamageByEntityEvent be && be.getDamager() instanceof LivingEntity att && att != p
                 && level(p.getInventory().getChestplate(), "fireaura") > 0) {
             att.setFireTicks(Math.max(att.getFireTicks(), 60));
@@ -665,6 +671,50 @@ public final class CustomEnchantService implements Module, Listener {
             Msg.actionBar(p, "&c✦ Берсерк! &7Сила I на 8 сек (откат 1 мин)");
             Msg.sound(p, Sound.ENTITY_RAVAGER_ROAR, 0.5f, 1.3f);
         });
+    }
+
+    // ------------------------------------------------------------------ Грабитель: ломает «технику» с одного удара
+
+    /** Сущности плагина (NPC, голограммы, события, лобби) не трогаем. */
+    private static boolean pluginEntity(org.bukkit.entity.Entity en) {
+        var pdc = en.getPersistentDataContainer();
+        return en.isInvulnerable() || pdc.has(Keys.NPC_ID) || pdc.has(Keys.HOLOGRAM) || pdc.has(Keys.EVENT_ENTITY)
+                || pdc.has(Keys.LOBBY_ENTITY) || pdc.has(Keys.TROLL_ENTITY);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void robberVehicle(org.bukkit.event.vehicle.VehicleDamageEvent e) {
+        if (!enabled || !(e.getAttacker() instanceof Player p)) return;
+        if (level(p.getInventory().getItemInMainHand(), "robber") <= 0 || pluginEntity(e.getVehicle())) return;
+        e.setDamage(1000);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void robberEntity(EntityDamageByEntityEvent e) {
+        if (!enabled || !(e.getDamager() instanceof Player p)) return;
+        org.bukkit.entity.Entity en = e.getEntity();
+        if (!(en instanceof org.bukkit.entity.ArmorStand) && !(en instanceof org.bukkit.entity.ItemFrame)) return;
+        if (level(p.getInventory().getItemInMainHand(), "robber") <= 0 || pluginEntity(en)) return;
+        org.bukkit.Location at = en.getLocation();
+        List<ItemStack> drops = new ArrayList<>();
+        if (en instanceof org.bukkit.entity.ArmorStand as) {
+            if (as.isMarker()) return;
+            for (EquipmentSlot sl : EquipmentSlot.values()) {
+                try {
+                    ItemStack it = as.getEquipment().getItem(sl);
+                    if (it != null && !it.getType().isAir()) drops.add(it);
+                } catch (IllegalArgumentException ignored) { /* слот не поддерживается стойкой */ }
+            }
+            drops.add(new ItemStack(Material.ARMOR_STAND));
+        } else if (en instanceof org.bukkit.entity.ItemFrame fr) {
+            if (fr.isFixed()) return;
+            if (!fr.getItem().getType().isAir()) drops.add(fr.getItem());
+            drops.add(new ItemStack(fr instanceof org.bukkit.entity.GlowItemFrame ? Material.GLOW_ITEM_FRAME : Material.ITEM_FRAME));
+        }
+        e.setCancelled(true);
+        en.remove();
+        if (p.getGameMode() != org.bukkit.GameMode.CREATIVE) for (ItemStack d : drops) at.getWorld().dropItemNaturally(at, d);
+        at.getWorld().playSound(at, Sound.ENTITY_ARMOR_STAND_BREAK, 1f, 1f);
     }
 
     /** Грабитель: часть баланса убитого игрока переходит убийце (не в дуэлях и не между соклановцами). */

@@ -8,9 +8,9 @@
 #  Управление в игре: /usmp npc ... и панель владельца → NPC.
 # ============================================================
 #  Место NPC можно задать так: "@anchor:<имя>" — точка постройки (лобби/город), создаётся автоматически при строительстве.
-config-version: 6
+config-version: 7
 # При обновлении у существующего файла заменяются только эти ключи (списки товаров), остальное сохраняется.
-upgrade-overwrite: [npcs.smith.trades, npcs.alchemist.trades, npcs.trader_market.trades]
+upgrade-overwrite: [npcs.smith.trades, npcs.alchemist.trades, npcs.trader_market.trades, npcs.archer.trades, npcs.fisher.trades, npcs.farmer.trades, npcs.miller.trades]
 npcs:
   # ---------------- Лобби ----------------
   guide:
@@ -184,9 +184,17 @@ npcs:
     location: "@anchor:archer"
     trades:
       - {item: "ARROW:32", price: 150}
+      - {item: "SPECTRAL_ARROW:16", price: 400}
       - {item: "BOW#power=1", price: 900}
+      - {item: "BOW#power=4,unbreaking=3", price: 6000}
+      - {item: "BOW#power=5,flame=1,infinity=1,unbreaking=3", price: 15000}
       - {item: "CROSSBOW", price: 700}
+      - {item: "CROSSBOW#quick_charge=3,multishot=1,unbreaking=3", price: 6000}
       - {item: "SHIELD", price: 300}
+      - {item: "TARGET", price: 200}
+      - {item: "FEATHER:16", price: 100}
+      - {item: "FLINT:16", price: 100}
+      - {item: "ce:frost", price: 36000}
   fisher:
     name: "&3Рыбак"
     role: TRADER
@@ -194,8 +202,17 @@ npcs:
     location: "@anchor:fisher"
     trades:
       - {item: "FISHING_ROD#lure=1", price: 700}
+      - {item: "FISHING_ROD#lure=3,luck_of_the_sea=3,unbreaking=3", price: 6000}
       - {item: "COOKED_SALMON:16", price: 250}
+      - {item: "COOKED_COD:16", price: 200}
       - {item: "BUCKET", price: 120}
+      - {item: "WATER_BUCKET", price: 150}
+      - {item: "KELP:32", price: 100}
+      - {item: "PRISMARINE_SHARD:16", price: 600}
+      - {item: "NAUTILUS_SHELL", price: 700}
+      - {item: "OAK_BOAT", price: 150}
+      - {item: "ce:fisher", price: 30000}
+      - {item: "ce:bookfisher", price: 120000}
   farmer:
     name: "&2Фермер"
     role: TRADER
@@ -205,7 +222,15 @@ npcs:
       - {item: "WHEAT_SEEDS:32", price: 60}
       - {item: "CARROT:16", price: 80}
       - {item: "POTATO:16", price: 80}
+      - {item: "BEETROOT_SEEDS:16", price: 60}
+      - {item: "PUMPKIN_SEEDS:8", price: 80}
+      - {item: "MELON_SEEDS:8", price: 80}
+      - {item: "SUGAR_CANE:16", price: 200}
+      - {item: "COCOA_BEANS:16", price: 200}
+      - {item: "BONE_MEAL:32", price: 250}
+      - {item: "COMPOSTER", price: 150}
       - {item: "IRON_HOE", price: 250}
+      - {item: "DIAMOND_HOE#efficiency=3,unbreaking=3", price: 3000}
   miller:
     name: "&fМельник"
     role: TRADER
@@ -215,3 +240,11 @@ npcs:
       - {item: "BREAD:16", price: 110}
       - {item: "CAKE", price: 350}
       - {item: "HAY_BLOCK:4", price: 120}
+      - {item: "COOKIE:32", price: 200}
+      - {item: "PUMPKIN_PIE:8", price: 300}
+      - {item: "WHITE_WOOL:16", price: 300}
+      - {item: "SHEARS", price: 150}
+      - {item: "LEAD:2", price: 200}
+      - {item: "SADDLE", price: 1500}
+      - {item: "NAME_TAG", price: 1200}
+      - {item: "ce:satiety", price: 45000}

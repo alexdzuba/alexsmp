@@ -32,6 +32,7 @@ commands:
   tpdeny: {description: Отклонить запрос телепортации, aliases: [tpno]}
   balance: {description: Баланс, aliases: [bal, money]}
   pay: {description: Перевод денег}
+  trade: {description: Обмен с игроком, aliases: [обмен]}
   mail: {description: Почта}
   shop: {description: Серверный магазин}
   sell: {description: Скупка предметов}

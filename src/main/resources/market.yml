@@ -7,7 +7,7 @@
 # ============================================================
 
 # Версия файла. Если в новой версии плагина число больше, старый файл сохраняется как market.yml.old-v… и заменяется.
-config-version: 9
+config-version: 10
 # При обновлении версии у существующего файла меняются только эти ключи, остальные настройки сохраняются.
 upgrade-overwrite: [pricing.buy-markup, sell.volume-decay, shop.always-buyable]
 
@@ -53,7 +53,7 @@ shop:
     BREEZE_ROD, WIND_CHARGE, ENCHANTED_BOOK, SADDLE, NAME_TAG, ELYTRA, BEACON, OBSIDIAN, CRYING_OBSIDIAN]
 
   # Всегда в продаже, даже если предмет из Незера/Энда или «премиум» (метки выше на них не действуют).
-  always-buyable: [QUARTZ, OBSERVER, SOUL_SAND]
+  always-buyable: [QUARTZ, OBSERVER, SOUL_SAND, EXPERIENCE_BOTTLE]
 
 # Книги чар в магазине (раздел «Книги чар» в /shop). Проклятия не продаются.
 enchant-books:

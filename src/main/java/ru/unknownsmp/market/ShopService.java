@@ -137,7 +137,7 @@ public final class ShopService implements Module {
         }
         // Всегда в продаже, даже с меткой nether/end/premium (например, кварц и наблюдатель для редстоуна).
         alwaysBuyable.clear();
-        List<String> always = c.contains("shop.always-buyable") ? c.getStringList("shop.always-buyable") : List.of("QUARTZ", "OBSERVER", "SOUL_SAND");
+        List<String> always = c.contains("shop.always-buyable") ? c.getStringList("shop.always-buyable") : List.of("QUARTZ", "OBSERVER", "SOUL_SAND", "EXPERIENCE_BOTTLE");
         for (String b : always) {
             Material m = Material.matchMaterial(b);
             if (m != null) alwaysBuyable.add(m);

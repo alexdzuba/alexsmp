@@ -50,6 +50,22 @@ shop:
     NAUTILUS_SHELL, ECHO_SHARD, RECOVERY_COMPASS, SNIFFER_EGG, TRIAL_KEY, OMINOUS_TRIAL_KEY, HEAVY_CORE, MACE,
     BREEZE_ROD, WIND_CHARGE, ENCHANTED_BOOK, SADDLE, NAME_TAG, ELYTRA, BEACON, OBSIDIAN, CRYING_OBSIDIAN]
 
+  # Всегда в продаже, даже если предмет из Незера/Энда или «премиум» (метки выше на них не действуют).
+  always-buyable: [QUARTZ, OBSERVER]
+
+# Книги чар в магазине (раздел «Книги чар» в /shop). Проклятия не продаются.
+enchant-books:
+  enabled: true
+  # Цена книги = price-per-level × уровень × уровень. Пример при 2000: Острота V = 50 000, Прочность III = 18 000.
+  price-per-level: 2000
+  # Множитель для «сокровищных» чар (их нет в столе зачарований).
+  treasure-multiplier: 5
+  # Чары, которых нет в продаже (id чар: mending, silk_touch, sharpness...).
+  blacklist: [binding_curse, vanishing_curse]
+  # Своя базовая цена (за 1 уровень, дальше так же × уровень²).
+  overrides:
+    mending: 50000
+
 mail:
   capacity: 10
 

@@ -56,6 +56,13 @@ public final class ShopService implements Module {
     private long dailyLimit, itemSoftCap;
     private double softCapFloor;
     private Set<Integer> shopBlockedTags = Set.of();
+    private final Set<Material> alwaysBuyable = EnumSet.noneOf(Material.class);
+    // Книги чар в магазине.
+    private boolean booksEnabled = true;
+    private long bookPricePerLevel = 2000;
+    private double bookTreasureMul = 5;
+    private final Set<String> bookBlacklist = new java.util.HashSet<>();
+    private final Map<String, Long> bookOverrides = new java.util.HashMap<>();
 
     public ShopService(UnknownSMP plugin) {
         this.plugin = plugin;
@@ -128,6 +135,23 @@ public final class ShopService implements Module {
             Material m = Material.matchMaterial(b);
             if (m != null) shopBlack.add(m);
         }
+        // Всегда в продаже, даже с меткой nether/end/premium (например, кварц и наблюдатель для редстоуна).
+        alwaysBuyable.clear();
+        List<String> always = c.contains("shop.always-buyable") ? c.getStringList("shop.always-buyable") : List.of("QUARTZ", "OBSERVER");
+        for (String b : always) {
+            Material m = Material.matchMaterial(b);
+            if (m != null) alwaysBuyable.add(m);
+        }
+        booksEnabled = c.getBoolean("enchant-books.enabled", true);
+        bookPricePerLevel = Math.max(1, c.getLong("enchant-books.price-per-level", 2000));
+        bookTreasureMul = Math.max(1, c.getDouble("enchant-books.treasure-multiplier", 5));
+        bookBlacklist.clear();
+        List<String> bb = c.contains("enchant-books.blacklist") ? c.getStringList("enchant-books.blacklist") : List.of("binding_curse", "vanishing_curse");
+        for (String b : bb) bookBlacklist.add(b.toLowerCase(java.util.Locale.ROOT));
+        bookOverrides.clear();
+        var ov = c.getConfigurationSection("enchant-books.overrides");
+        if (ov != null) for (String k : ov.getKeys(false)) bookOverrides.put(k.toLowerCase(java.util.Locale.ROOT), Math.max(1, ov.getLong(k)));
+        else bookOverrides.put("mending", 50000L);
         // Пересчёт стоимости и построение магазина выполняем после полной загрузки сервера,
         // когда все рецепты (в т.ч. из датапаков) доступны.
         Tasks.later(1, () -> {
@@ -162,9 +186,10 @@ public final class ShopService implements Module {
         for (String[] meta : CAT_META) byCat.put(meta[0], new ArrayList<>());
         for (var e : values.all().entrySet()) {
             Material m = e.getKey();
-            if (!m.isItem() || m.isAir() || shopBlack.contains(m)) continue;
+            if (!m.isItem() || m.isAir() || shopBlack.contains(m) && !alwaysBuyable.contains(m)) continue;
             int tag = values.tags(m);
             boolean blocked = false;
+            if (alwaysBuyable.contains(m)) tag = 0;
             for (int bt : shopBlockedTags) if ((tag & bt) != 0) { blocked = true; break; }
             if (blocked) continue;
             shopBuyable.add(m);
@@ -507,6 +532,8 @@ public final class ShopService implements Module {
                 }
                 set(30, Items.of(Material.HOPPER).name("&6Скупка").lore("&7Сервер принимает почти любые предметы").build(), cl -> openSell(viewer, this));
                 set(32, Items.of(Material.NAME_TAG).name("&eЦена предмета").lore("&7Возьмите в руку и нажмите /worth").build());
+                if (booksEnabled) set(28, Items.of(Material.ENCHANTED_BOOK).name("&dКниги чар").lore("&7Любые чары любого уровня", "", "&eОткрыть").build(),
+                        cl -> openBooks(viewer, this));
                 if (parent != null) parent(parent);
                 backButton(31);
             }
@@ -538,6 +565,111 @@ public final class ShopService implements Module {
                 return out;
             }
         }.parent(parent).open();
+    }
+
+    // ------------------------------------------------------------------ Книги чар
+
+    /** Чары, которые продаются в магазине. */
+    private List<org.bukkit.enchantments.Enchantment> sellableEnchants() {
+        List<org.bukkit.enchantments.Enchantment> out = new ArrayList<>();
+        for (org.bukkit.enchantments.Enchantment e : org.bukkit.Registry.ENCHANTMENT) {
+            if (e.isCursed() || bookBlacklist.contains(e.getKey().getKey())) continue;
+            out.add(e);
+        }
+        out.sort(java.util.Comparator.comparing(e -> e.getKey().getKey()));
+        return out;
+    }
+
+    /** Цена книги: (своя цена или price-per-level × множитель сокровищ) × уровень². */
+    public long bookPrice(org.bukkit.enchantments.Enchantment e, int level) {
+        Long base = bookOverrides.get(e.getKey().getKey());
+        double b = base != null ? base : bookPricePerLevel * (e.isTreasure() ? bookTreasureMul : 1.0);
+        return Math.max(1, Math.round(b * level * level));
+    }
+
+    private static ItemStack bookItem(org.bukkit.enchantments.Enchantment e, int level) {
+        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+        if (book.getItemMeta() instanceof org.bukkit.inventory.meta.EnchantmentStorageMeta m) {
+            m.addStoredEnchant(e, level, true);
+            book.setItemMeta(m);
+        }
+        return book;
+    }
+
+    /** Значок для меню: название чар переводится клиентом игрока. */
+    private ItemStack bookIcon(org.bukkit.enchantments.Enchantment e, int level, String... lore) {
+        ItemStack icon = Items.of(Material.ENCHANTED_BOOK).lore(lore).build();
+        var meta = icon.getItemMeta();
+        meta.displayName(e.displayName(level).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
+                .color(e.isTreasure() ? net.kyori.adventure.text.format.NamedTextColor.GOLD : net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
+        icon.setItemMeta(meta);
+        return icon;
+    }
+
+    public void openBooks(Player p, Menu parent) {
+        if (!booksEnabled) return;
+        new PagedMenu(p, "&8Книги чар") {
+            @Override
+            protected List<Entry> entries() {
+                List<Entry> out = new ArrayList<>();
+                for (var e : sellableEnchants()) {
+                    int max = e.getMaxLevel();
+                    List<String> lore = new ArrayList<>();
+                    for (int lvl = 1; lvl <= max; lvl++) lore.add("&7Уровень " + lvl + ": &6" + Text.money(bookPrice(e, lvl)));
+                    lore.add("");
+                    lore.add(max > 1 ? "&eНажмите, чтобы выбрать уровень" : "&eНажмите, чтобы купить");
+                    out.add(new Entry(bookIcon(e, max, lore.toArray(String[]::new)), cl -> {
+                        if (max == 1) buyBook(viewer, e, 1, null);
+                        else openBookLevels(viewer, e, this);
+                    }));
+                }
+                return out;
+            }
+        }.parent(parent).open();
+    }
+
+    private void openBookLevels(Player p, org.bukkit.enchantments.Enchantment e, Menu parent) {
+        new Menu(p, 3, "&8Выберите уровень") {
+            @Override
+            protected void build() {
+                fill(Items.filler());
+                int max = Math.min(7, e.getMaxLevel());
+                int start = 13 - max / 2;
+                for (int lvl = 1; lvl <= max; lvl++) {
+                    final int l = lvl;
+                    set(start + lvl - 1, bookIcon(e, l, "&7Цена: &6" + Text.money(bookPrice(e, l)), "", "&eНажмите, чтобы купить"),
+                            cl -> buyBook(viewer, e, l, null));
+                }
+                if (parent != null) parent(parent);
+                backButton(22);
+            }
+        }.open();
+    }
+
+    public void buyBook(Player p, org.bukkit.enchantments.Enchantment e, int level, Runnable after) {
+        if (!booksEnabled || level < 1 || level > e.getMaxLevel() || e.isCursed() || bookBlacklist.contains(e.getKey().getKey())) return;
+        if (!plugin.economy().tradeAllowed(p)) return;
+        if (MailService.freeSlots(p) < 1) {
+            Msg.error(p, "shop.no-space", "Недостаточно места в инвентаре (нужно {n} свободных ячеек).", "n", 1);
+            return;
+        }
+        final long price = bookPrice(e, level);
+        final UUID u = p.getUniqueId();
+        if (!busy.add(u)) return;
+        final String what = e.getKey().getKey() + " " + level;
+        Tasks.then(plugin.db().tx(c -> EconomyService.debit(c, u, price, "shop_book", what)), bal -> {
+            busy.remove(u);
+            plugin.economy().apply(u, bal);
+            plugin.mail().giveOrMail(p, bookItem(e, level), "shop");
+            p.saveData();
+            Msg.ok(p, "shop.book-bought", "Куплена книга чар ({i}) за {t}.", "i", what, "t", Text.money(price));
+            plugin.logs().log(p, "market", "shop_book", p.getLocation(), what + " = " + price);
+            if (after != null) after.run();
+        }, err -> {
+            busy.remove(u);
+            if (err instanceof Database.TxAbort ab) Msg.error(p, ab.key, ab.def);
+            else Msg.error(p, "shop.error", "Покупка не выполнена. Деньги не списаны.");
+        });
     }
 
     public void openSell(Player p, Menu parent) {

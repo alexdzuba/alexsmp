@@ -52,7 +52,7 @@ public final class ShopService implements Module {
     private final Map<UUID, Double> soldTotalToday = new ConcurrentHashMap<>();
     private volatile long cacheDay;
 
-    private double buyMarkup, sellFraction, enchantBonus, decayHalf = 256, decayFloor = 0.2;
+    private double buyMarkup, sellFraction, enchantBonus, decayHalf = 256, decayFloor = 0.2, decayExpensive = 400;
     private long dailyLimit, itemSoftCap;
     private double softCapFloor;
     private Set<Integer> shopBlockedTags = Set.of();
@@ -83,7 +83,7 @@ public final class ShopService implements Module {
                 .usage("/worth").desc("Узнать цену предмета в руке").exec((s, a) -> {
                     Player p = (Player) s;
                     ItemStack h = p.getInventory().getItemInMainHand();
-                    long sp = sellPrice(h);
+                    long sp = sellPrice(h) <= 0 ? -1 : unitPriceNow(p.getUniqueId(), h);
                     long bp = buyPrice(h.getType());
                     if (sp <= 0 && bp <= 0) { Msg.error(p, "worth.none", "У этого предмета нет цены."); return; }
                     Msg.send(p, "worth.line", "&f{i}&7: скупка &6{s}&7, в магазине &6{b}", "i", Items.itemName(h),
@@ -102,6 +102,10 @@ public final class ShopService implements Module {
         softCapFloor = clamp(c.getDouble("sell.over-cap-fraction", 0.1), 0, 1);
         decayHalf = Math.max(1, c.getDouble("sell.volume-decay.half-items", 256));
         decayFloor = clamp(c.getDouble("sell.volume-decay.floor", 0.2), 0.01, 1);
+        // С какой цены скупки (за 1 шт.) цена дорогих предметов падает быстрее. По умолчанию масштабируется вместе с value-scale,
+        // иначе при value-scale: 10 почти всё считается «дорогим» и цена падает в разы быстрее задуманного.
+        double scale = Math.max(0.0001, c.getDouble("pricing.value-scale", 1.0));
+        decayExpensive = Math.max(1, c.getDouble("sell.volume-decay.expensive-price", 40 * scale));
         uniqueRarityPrice.clear();
         var ur = c.getConfigurationSection("sell.unique-rarity-prices");
         if (ur != null) for (String k : ur.getKeys(false)) uniqueRarityPrice.put(k, Math.max(0, ur.getLong(k)));
@@ -287,19 +291,57 @@ public final class ShopService implements Module {
     /** Сумма множителей цены для a штук, если уже продано n штук: интеграл 1/(1+x/h), не ниже пола. */
     private double volumeFactor(double n, int a, double unit) {
         // Чем дороже предмет, тем быстрее падает цена: редкие дорогие вещи (трезубец, звезда Незера) нельзя продавать стаками по полной цене.
-        double h = Math.max(0.5, decayHalf * Math.min(1.0, 40.0 / Math.max(1.0, unit)));
+        double h = Math.max(0.5, decayHalf * Math.min(1.0, decayExpensive / Math.max(1.0, unit)));
         double integral = h * Math.log((1 + (n + a) / h) / (1 + n / h));
         return Math.max(integral, decayFloor * a);
     }
 
-    /** Цена скупки одной штуки с учётом дневного лимита этого игрока. */
-    public long sellPriceFor(UUID u, ItemStack it) {
-        long base = sellPrice(it);
-        if (base <= 0) return base;
-        if (itemSoftCap <= 0) return base;
-        double earned = soldToday.getOrDefault(u, Map.of()).getOrDefault(it.getType(), 0.0);
-        if (earned >= itemSoftCap) return Math.max(1, (long) Math.floor(base * softCapFloor));
-        return base;
+    /** Расчёт продажи без побочных эффектов. Один и тот же расчёт используется и для показа цены, и для самой продажи. */
+    public record Quote(long total, boolean hitLimit, List<ItemStack> sold, List<ItemStack> rejected,
+                        Map<Material, Integer> counts, Map<Material, Double> addByItem) {}
+
+    public Quote quote(UUID u, List<ItemStack> items) {
+        rolloverIfNeeded();
+        Map<Material, Double> mine = soldToday.getOrDefault(u, Map.of());
+        double totalBefore = soldTotalToday.getOrDefault(u, 0.0);
+        long total = 0;
+        boolean hitLimit = false;
+        Map<Material, Integer> counts = new LinkedHashMap<>();
+        Map<Material, Double> addByItem = new EnumMap<>(Material.class);
+        List<ItemStack> sold = new ArrayList<>();
+        List<ItemStack> rejected = new ArrayList<>();
+        for (ItemStack it : items) {
+            if (it == null || it.getType().isAir()) continue;
+            double base = sellExact(it);
+            if (base <= 0) { rejected.add(it); continue; }
+            double earnedSoFar = mine.getOrDefault(it.getType(), 0.0) + addByItem.getOrDefault(it.getType(), 0.0);
+            double perD = base;
+            if (itemSoftCap > 0 && earnedSoFar >= itemSoftCap) perD *= softCapFloor;
+            // Чем больше предметов этого вида продано за сутки, тем ниже цена (плавное падение, но не ниже пола).
+            // Сколько «штук» уже продано, считаем по полной цене: иначе после мягкого лимита падение удваивалось.
+            double soldUnits = earnedSoFar / Math.max(0.01, base);
+            // Округляется только итог по стеку, а не каждая штука: иначе дешёвые предметы (кость → костная мука) дают прибыль на крафте.
+            long line = (long) Math.floor(perD * volumeFactor(soldUnits, it.getAmount(), base));
+            if (line < 1) { rejected.add(it); continue; }
+            if (dailyLimit > 0 && totalBefore + total + line > dailyLimit) {
+                hitLimit = true;
+                rejected.add(it);
+                continue;
+            }
+            total += line;
+            counts.merge(it.getType(), it.getAmount(), Integer::sum);
+            addByItem.merge(it.getType(), (double) line, Double::sum);
+            sold.add(it);
+        }
+        return new Quote(total, hitLimit, sold, rejected, counts, addByItem);
+    }
+
+    /** Цена скупки одной штуки прямо сейчас для этого игрока (с учётом уже проданного за день). */
+    public long unitPriceNow(UUID u, ItemStack it) {
+        ItemStack one = it.clone();
+        one.setAmount(1);
+        Quote q = quote(u, List.of(one));
+        return q.total() > 0 ? q.total() : -1;
     }
 
     private static boolean hasContents(ItemStack it) {
@@ -374,35 +416,15 @@ public final class ShopService implements Module {
 
     /** Продать набор предметов (уже изъятых). Учитывает дневной лимит. При ошибке возвращает. */
     public void sellItems(Player p, List<ItemStack> items, Runnable onDone) {
-        rolloverIfNeeded();
         final UUID u = p.getUniqueId();
+        Quote q = quote(u, items);
         Map<Material, Double> mine = soldToday.computeIfAbsent(u, k -> new ConcurrentHashMap<>());
-        double totalBefore = soldTotalToday.getOrDefault(u, 0.0);
-        long total = 0;
-        boolean hitLimit = false;
-        Map<Material, Integer> counts = new LinkedHashMap<>();
-        Map<Material, Double> addByItem = new EnumMap<>(Material.class);
-        List<ItemStack> sold = new ArrayList<>();
-        List<ItemStack> rejected = new ArrayList<>();
-        for (ItemStack it : items) {
-            double perD = sellExact(it);
-            if (perD <= 0) { rejected.add(it); continue; }
-            if (itemSoftCap > 0 && mine.getOrDefault(it.getType(), 0.0) >= itemSoftCap) perD *= softCapFloor;
-            // Чем больше предметов этого вида продано за сутки, тем ниже цена (плавное падение, но не ниже пола).
-            double earnedSoFar = mine.getOrDefault(it.getType(), 0.0) + addByItem.getOrDefault(it.getType(), 0.0);
-            // Округляется только итог по стеку, а не каждая штука: иначе дешёвые предметы (кость → костная мука) дают прибыль на крафте.
-            long line = (long) Math.floor(perD * volumeFactor(earnedSoFar / Math.max(0.01, perD), it.getAmount(), perD));
-            if (line < 1) { rejected.add(it); continue; }
-            if (dailyLimit > 0 && totalBefore + total + line > dailyLimit) {
-                hitLimit = true;
-                rejected.add(it);
-                continue;
-            }
-            total += line;
-            counts.merge(it.getType(), it.getAmount(), Integer::sum);
-            addByItem.merge(it.getType(), (double) line, Double::sum);
-            sold.add(it);
-        }
+        long total = q.total();
+        boolean hitLimit = q.hitLimit();
+        Map<Material, Integer> counts = q.counts();
+        Map<Material, Double> addByItem = q.addByItem();
+        List<ItemStack> sold = q.sold();
+        List<ItemStack> rejected = q.rejected();
         for (ItemStack it : rejected) plugin.mail().giveOrMail(p, it, "return");
         if (total <= 0) {
             if (hitLimit) Msg.error(p, "sell.limit", "Дневной лимит скупки достигнут ({l}). Продайте остальное завтра или игрокам через /ah.", "l", Text.money(dailyLimit));
@@ -551,17 +573,20 @@ public final class ShopService implements Module {
 
         private void updateButton() {
             if (inv == null) return;
-            long total = 0;
-            int accepted = 0, rejected = 0;
+            List<ItemStack> content = new ArrayList<>();
             for (int i = 0; i < 45; i++) {
                 ItemStack it = inv.getItem(i);
-                if (it == null || it.getType().isAir()) continue;
-                long pr = sellPriceFor(viewer.getUniqueId(), it);
-                if (pr > 0) { total += pr * it.getAmount(); accepted += it.getAmount(); }
-                else rejected += it.getAmount();
+                if (it != null && !it.getType().isAir()) content.add(it.clone());
             }
-            set(49, Items.of(Material.EMERALD).name("&a&lПродать за " + Text.money(total))
+            // Тот же расчёт, что и при продаже: показанная сумма совпадает с начисленной.
+            Quote q = quote(viewer.getUniqueId(), content);
+            int accepted = 0, rejected = 0;
+            for (ItemStack it : q.sold()) accepted += it.getAmount();
+            for (ItemStack it : q.rejected()) rejected += it.getAmount();
+            set(49, Items.of(Material.EMERALD).name("&a&lПродать за " + Text.money(q.total()))
                     .lore("&7Принимается: &f" + accepted + " шт.", rejected > 0 ? "&cНе принимается: " + rejected + " шт. (вернутся)" : "",
+                            q.hitLimit() ? "&cЧасть сверх дневного лимита скупки" : "",
+                            "&7Чем больше одного вида за день,", "&7тем ниже цена за штуку.",
                             "", "&eНажмите для продажи").build(), c -> sell());
         }
 

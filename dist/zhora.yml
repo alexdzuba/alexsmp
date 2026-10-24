@@ -11,7 +11,7 @@ enabled: true
 api:
   # Базовый адрес; запросы идут на <endpoint>/chat/completions
   endpoint: "https://2.27.20.129/slfe/v1"
-  key: "n2a_eqLvVDi2qKaq234vqRJXuVDSFvvjOjJDUX9G721waoE"
+  key: ""
   key-env: "ZHORA_API_KEY"
   model: "deepseek-v4.1-flash"
   temperature: 0.9

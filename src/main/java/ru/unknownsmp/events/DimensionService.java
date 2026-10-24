@@ -245,6 +245,10 @@ public final class DimensionService implements Module, Listener {
 
     /** Итог ритуала (вызывается RitualEvent). */
     public void ritualFinished(boolean success, UUID activator, ItemStack key, Location at) {
+        ritualFinished(success, activator, key, at, null);
+    }
+
+    public void ritualFinished(boolean success, UUID activator, ItemStack key, Location at, String reason) {
         String uid = plugin.items().uidOf(key);
         plugin.state().set("ritual_holder", null);
         plugin.state().set("ritual_key", null);
@@ -261,6 +265,7 @@ public final class DimensionService implements Module, Listener {
             plugin.state().set("nether_retry_at", retry);
             plugin.db().tx(c -> { MailService.insert(c, activator, key, "reward"); return null; });
             Msg.broadcast("dim.ritual-failed", "&7Ритуал прерван. Ключ вернулся к владельцу (в почту). Повтор возможен через час.");
+            if (reason != null) Msg.broadcast("dim.ritual-failed-reason", "&7Причина: &f{r}", "r", reason);
         }
     }
 

@@ -1,5 +1,6 @@
 package ru.unknownsmp.events.types;
 
+import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -21,6 +22,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
+import ru.unknownsmp.core.Msg;
 import ru.unknownsmp.core.Text;
 import ru.unknownsmp.core.UnknownSMP;
 import ru.unknownsmp.events.EventService;
@@ -48,6 +50,8 @@ public final class RitualEvent extends GameEvent {
     private int wave;
     private int seconds;
     private int noPlayers;
+    private int totalSpawned;
+    private String failReason = "время вышло";
 
     public RitualEvent(UnknownSMP plugin, EventService s, UUID activator, ItemStack key) {
         super(plugin, s);
@@ -61,8 +65,16 @@ public final class RitualEvent extends GameEvent {
     @Override public int minutes() { return plugin.configs().get("events.yml").getInt("types.ritual.minutes", 10); }
     @Override public String description() { return "Защитите алтарь от трёх волн существ!"; }
 
+    private int cfgInt(String key, int def) {
+        return plugin.configs().get("events.yml").getInt("types.ritual." + key, def);
+    }
+
+    /** Почему ритуал не удался — показывается игрокам. */
+    public String failReason() { return failReason; }
+
     @Override
     protected boolean setup() {
+        hp = Math.max(1, cfgInt("altar-hp", 100));
         World w = loc.getWorld();
         Block center = loc.getBlock();
         for (int x = -3; x <= 3; x++) for (int z = -3; z <= 3; z++) {
@@ -114,21 +126,40 @@ public final class RitualEvent extends GameEvent {
             } else bar.removePlayer(p);
         }
         noPlayers = nearby == 0 ? noPlayers + 1 : 0;
+        int atAltar = 0;
         for (Entity e : spawned) {
             if (!e.isValid()) continue;
-            if (e.getLocation().distanceSquared(loc) <= 9) hp -= 1;
+            double d2 = e.getLocation().distanceSquared(loc);
+            if (d2 <= 9) atAltar++;
+            // Существо улетело или застряло далеко (ифриты, мобы на деревьях) — возвращаем к алтарю, иначе волну не добить.
+            if (d2 > 48 * 48 || (seconds % 30 == 0 && d2 > 24 * 24)) {
+                e.teleport(groundNear(10));
+            }
             if (e instanceof Monster m && m.getTarget() == null) {
                 for (Player p : w.getPlayers()) if (near(p, 40)) { m.setTarget(p); break; }
             }
         }
-        bar.setProgress(Math.max(0, Math.min(1, hp / 100.0)));
-        bar.setTitle(Text.legacySection("&cАлтарь Незера &7— прочность " + Math.max(0, hp) + "% &8| волна " + wave + "/3"));
-        if (hp <= 0 || noPlayers >= 60) {
+        // Урон алтарю: не больше max-damage-per-second в секунду, иначе толпа третьей волны,
+        // бегущая за игроками на алтаре, сносила его за несколько секунд.
+        int dmg = Math.min(atAltar, Math.max(1, cfgInt("max-damage-per-second", 2)));
+        hp -= dmg;
+        if (dmg > 0 && seconds % 5 == 0) {
+            for (Player p : w.getPlayers()) if (near(p, 40)) Msg.actionBar(p, "&c⚠ Алтарь атакуют! Отводите существ от алтаря.");
+        }
+        int maxHp = Math.max(1, cfgInt("altar-hp", 100));
+        bar.setProgress(Math.max(0, Math.min(1, hp / (double) maxHp)));
+        bar.setTitle(Text.legacySection("&cАлтарь Незера &7— прочность " + Math.max(0, hp * 100 / maxHp) + "% &8| волна " + wave + "/3 &8| осталось существ: " + alive()));
+        if (hp <= 0) {
+            failReason = "алтарь разрушен — существа слишком долго стояли рядом с ним";
             finishNow();
             return;
         }
-        boolean allDead = spawned.stream().noneMatch(Entity::isValid);
-        if (wave == 3 && allDead && seconds > 30) finishNow();
+        if (noPlayers >= 60) {
+            failReason = "рядом с алтарём (40 блоков) никого не было больше минуты";
+            finishNow();
+            return;
+        }
+        if (wave == 3 && alive() == 0 && seconds > 30) finishNow();
     }
 
     private void spawnWave(int n) {
@@ -139,13 +170,28 @@ public final class RitualEvent extends GameEvent {
         int count = 4 + n * 3;
         for (int i = 0; i < count; i++) {
             double a = rnd.nextDouble() * Math.PI * 2;
-            Location spot = w.getHighestBlockAt((int) (loc.getX() + Math.cos(a) * 14), (int) (loc.getZ() + Math.sin(a) * 14)).getLocation().add(0.5, 1, 0.5);
+            Location spot = ground((int) (loc.getX() + Math.cos(a) * 14), (int) (loc.getZ() + Math.sin(a) * 14));
             LivingEntity m = (LivingEntity) w.spawnEntity(spot, types[rnd.nextInt(types.length)]);
+            totalSpawned++;
             if (m instanceof PiglinAbstract pa) pa.setImmuneToZombification(true);
             m.customName(Text.c("&4Порождение Незера"));
             m.setRemoveWhenFarAway(false);
             mark(m);
         }
+    }
+
+    /** Земля в точке (без листвы — раньше существа появлялись на кронах деревьев и не могли спуститься). */
+    private Location ground(int x, int z) {
+        return loc.getWorld().getHighestBlockAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES).getLocation().add(0.5, 1, 0.5);
+    }
+
+    private Location groundNear(double r) {
+        double a = rnd.nextDouble() * Math.PI * 2;
+        return ground((int) (loc.getX() + Math.cos(a) * r), (int) (loc.getZ() + Math.sin(a) * r));
+    }
+
+    private long alive() {
+        return spawned.stream().filter(Entity::isValid).count();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -168,7 +214,17 @@ public final class RitualEvent extends GameEvent {
 
     @Override
     protected boolean succeeded() {
-        return hp > 0 && wave >= 3 && noPlayers < 60 && spawned.stream().noneMatch(Entity::isValid);
+        if (hp <= 0 || noPlayers >= 60) return false;
+        if (wave < 3) { failReason = "не дошли до третьей волны"; return false; }
+        // Раньше по истечении времени ритуал проваливался, если жив был хотя бы один моб (часто — улетевший ифрит).
+        // Теперь алтарь выстоял и почти все существа убиты — это победа; остатки исчезнут вместе с алтарём.
+        long left = alive();
+        double allowed = Math.max(1, totalSpawned * cfgInt("allowed-alive-percent", 20) / 100.0);
+        if (left > allowed) {
+            failReason = "время вышло, а в живых осталось " + left + " существ (можно не больше " + (int) allowed + ")";
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -179,6 +235,6 @@ public final class RitualEvent extends GameEvent {
 
     /** Итог ритуала: открыть Незер или вернуть ключ. */
     public void onFinish(boolean success, List<Map.Entry<UUID, Double>> qualified) {
-        plugin.dimensions().ritualFinished(success, activator, key, loc);
+        plugin.dimensions().ritualFinished(success, activator, key, loc, failReason);
     }
 }

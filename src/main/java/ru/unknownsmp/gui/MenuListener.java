@@ -7,7 +7,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -62,12 +61,8 @@ public final class MenuListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onMove(InventoryMoveItemEvent e) {
-        if (e.getDestination().getHolder(false) instanceof Menu || e.getSource().getHolder(false) instanceof Menu) {
-            e.setCancelled(true);
-        }
-    }
+    // Обработчика InventoryMoveItemEvent нет намеренно: меню — виртуальные инвентари, воронки к ним не подключаются,
+    // а сам факт подписки заставлял Paper создавать событие на каждое перемещение предмета каждой воронкой.
 
     @EventHandler
     public void onClose(InventoryCloseEvent e) {

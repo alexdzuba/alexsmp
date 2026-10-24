@@ -7,11 +7,13 @@
 # ============================================================
 
 # Версия файла. Если в новой версии плагина число больше, старый файл сохраняется как market.yml.old-v… и заменяется.
-config-version: 6
+config-version: 7
+# При обновлении версии у существующего файла меняются только эти ключи, остальные настройки сохраняются.
+upgrade-overwrite: [pricing.buy-markup]
 
 pricing:
   # Цена в магазине = стоимость × buy-markup
-  buy-markup: 1.8
+  buy-markup: 1.5
   # Цена скупки = стоимость × sell-fraction
   sell-fraction: 0.45
   # Все цены из values и fixed-values умножаются на этот коэффициент (10 = цены в 10 раз выше).
@@ -56,15 +58,15 @@ shop:
 # Книги чар в магазине (раздел «Книги чар» в /shop). Проклятия не продаются.
 enchant-books:
   enabled: true
-  # Цена книги = price-per-level × уровень × уровень. Пример при 2000: Острота V = 50 000, Прочность III = 18 000.
-  price-per-level: 2000
+  # Цена книги = price-per-level × уровень × уровень. Пример при 1500: Острота V = 37 500, Прочность III = 13 500.
+  price-per-level: 1500
   # Множитель для «сокровищных» чар (их нет в столе зачарований).
   treasure-multiplier: 5
   # Чары, которых нет в продаже (id чар: mending, silk_touch, sharpness...).
   blacklist: [binding_curse, vanishing_curse]
   # Своя базовая цена (за 1 уровень, дальше так же × уровень²).
   overrides:
-    mending: 50000
+    mending: 40000
 
 mail:
   capacity: 10
@@ -89,7 +91,7 @@ tags:
     NETHERITE_SCRAP, ELYTRA, TOTEM_OF_UNDYING, NETHER_STAR, HEART_OF_THE_SEA, ECHO_SHARD, HEAVY_CORE, BREEZE_ROD,
     TRIDENT, SHULKER_SHELL, ENCHANTED_GOLDEN_APPLE, DRAGON_HEAD]
 
-# Стоимость сырья (монеты за 1 шт.). Магазин ×1.8, скупка ×0.45 от этих чисел.
+# Стоимость сырья (монеты за 1 шт.). Магазин ×1.5, скупка ×0.45 от этих чисел.
 values:
   # --- Камень и земля ---
   COBBLESTONE: 0.5

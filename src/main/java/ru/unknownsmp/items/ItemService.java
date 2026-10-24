@@ -542,8 +542,9 @@ public final class ItemService implements Module, Listener {
     private void scanDuplicates() {
         Map<String, String> seen = new HashMap<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
-            List<ItemStack> all = new ArrayList<>(List.of(p.getInventory().getContents()));
-            all.addAll(List.of(p.getEnderChest().getContents()));
+            // Пустые ячейки — null, поэтому Arrays.asList (List.of падал с NullPointerException каждые 5 минут).
+            List<ItemStack> all = new ArrayList<>(java.util.Arrays.asList(p.getInventory().getContents()));
+            all.addAll(java.util.Arrays.asList(p.getEnderChest().getContents()));
             for (ItemStack it : all) {
                 String uid = uidOf(it);
                 if (uid == null) continue;

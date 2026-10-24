@@ -194,12 +194,29 @@ public final class WorldService implements Module, Listener {
         b.setWarningDistance(16);
     }
 
+    // Кэш точки спавна: inSpawnZone() вызывается на каждое течение воды/лавы, поршень и т.п.,
+    // и разбор строки из конфига при каждом вызове заметно нагружал сервер с фермами и редстоуном.
+    private String spawnCacheRaw;
+    private Location spawnCache;
+
+    private Location spawnRef() {
+        String raw = plugin.configs().main().getString("survival.spawn", "");
+        if (spawnCache == null || !raw.equals(spawnCacheRaw) || spawnCache.getWorld() == null) {
+            Location l = Text.loc(raw);
+            if (l == null) {
+                // Точка из мира (без конфига) может меняться — её не кэшируем.
+                spawnCacheRaw = null;
+                spawnCache = null;
+                return plugin.survivalWorld().getSpawnLocation().add(0.5, 0, 0.5);
+            }
+            spawnCacheRaw = raw;
+            spawnCache = l;
+        }
+        return spawnCache;
+    }
+
     public Location spawn() {
-        Location l = Text.loc(plugin.configs().main().getString("survival.spawn", ""));
-        if (l != null) return l;
-        World w = plugin.survivalWorld();
-        Location s = w.getSpawnLocation();
-        return s.add(0.5, 0, 0.5);
+        return spawnRef().clone();
     }
 
     /** Подбирает ближайшую безопасную точку на уровне площади: твёрдый пол, два свободных блока и открытое небо (не крыша и не внутри постройки). */
@@ -232,7 +249,7 @@ public final class WorldService implements Module, Listener {
 
     public boolean inSpawnZone(Location l) {
         if (l == null || l.getWorld() == null) return false;
-        Location s = spawn();
+        Location s = spawnRef();
         if (s.getWorld() == null || !s.getWorld().equals(l.getWorld())) return false;
         double dx = l.getX() - s.getX(), dz = l.getZ() - s.getZ();
         return dx * dx + dz * dz <= (double) radius * radius;

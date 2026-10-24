@@ -59,7 +59,7 @@ public final class ShopService implements Module {
     private final Set<Material> alwaysBuyable = EnumSet.noneOf(Material.class);
     // Книги чар в магазине.
     private boolean booksEnabled = true;
-    private long bookPricePerLevel = 2000;
+    private long bookPricePerLevel = 1500;
     private double bookTreasureMul = 5;
     private final Set<String> bookBlacklist = new java.util.HashSet<>();
     private final Map<String, Long> bookOverrides = new java.util.HashMap<>();
@@ -101,7 +101,7 @@ public final class ShopService implements Module {
     @Override
     public void reload() {
         YamlConfiguration c = plugin.configs().get("market.yml");
-        buyMarkup = Math.max(1.0, c.getDouble("pricing.buy-markup", 1.6));
+        buyMarkup = Math.max(1.0, c.getDouble("pricing.buy-markup", 1.5));
         sellFraction = clamp(c.getDouble("pricing.sell-fraction", 0.35), 0.01, 0.95);
         enchantBonus = Math.max(0, c.getDouble("pricing.enchant-bonus-per-level", 25));
         dailyLimit = Math.max(0, c.getLong("sell.daily-limit-per-player", 2_000_000));
@@ -143,7 +143,7 @@ public final class ShopService implements Module {
             if (m != null) alwaysBuyable.add(m);
         }
         booksEnabled = c.getBoolean("enchant-books.enabled", true);
-        bookPricePerLevel = Math.max(1, c.getLong("enchant-books.price-per-level", 2000));
+        bookPricePerLevel = Math.max(1, c.getLong("enchant-books.price-per-level", 1500));
         bookTreasureMul = Math.max(1, c.getDouble("enchant-books.treasure-multiplier", 5));
         bookBlacklist.clear();
         List<String> bb = c.contains("enchant-books.blacklist") ? c.getStringList("enchant-books.blacklist") : List.of("binding_curse", "vanishing_curse");
@@ -151,7 +151,7 @@ public final class ShopService implements Module {
         bookOverrides.clear();
         var ov = c.getConfigurationSection("enchant-books.overrides");
         if (ov != null) for (String k : ov.getKeys(false)) bookOverrides.put(k.toLowerCase(java.util.Locale.ROOT), Math.max(1, ov.getLong(k)));
-        else bookOverrides.put("mending", 50000L);
+        else bookOverrides.put("mending", 40000L);
         // Пересчёт стоимости и построение магазина выполняем после полной загрузки сервера,
         // когда все рецепты (в т.ч. из датапаков) доступны.
         Tasks.later(1, () -> {

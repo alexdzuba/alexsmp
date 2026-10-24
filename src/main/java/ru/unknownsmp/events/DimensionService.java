@@ -238,17 +238,18 @@ public final class DimensionService implements Module, Listener {
             plugin.state().set("ritual_key", Base64.getEncoder().encodeToString(k.serializeAsBytes()));
             Location at = p.getLocation().getBlock().getLocation().add(0.5, 0, 0.5);
             if (!plugin.events().startRitual(p, at, k)) {
-                ritualFinished(false, p.getUniqueId(), k, at);
+                ritualFinished(false, p.getUniqueId(), k, at, "ритуал не смог начаться: идёт другое событие или алтарь нельзя построить здесь (см. консоль)", false);
             }
         });
     }
 
     /** Итог ритуала (вызывается RitualEvent). */
     public void ritualFinished(boolean success, UUID activator, ItemStack key, Location at) {
-        ritualFinished(success, activator, key, at, null);
+        ritualFinished(success, activator, key, at, null, true);
     }
 
-    public void ritualFinished(boolean success, UUID activator, ItemStack key, Location at, String reason) {
+    /** cooldown=false — провал не по вине игроков (ошибка, остановка администратором): повтор сразу, без отката. */
+    public void ritualFinished(boolean success, UUID activator, ItemStack key, Location at, String reason, boolean cooldown) {
         String uid = plugin.items().uidOf(key);
         plugin.state().set("ritual_holder", null);
         plugin.state().set("ritual_key", null);
@@ -261,11 +262,18 @@ public final class DimensionService implements Module, Listener {
             plugin.logs().sys("progress", "nether_open", at, "uid=" + uid);
         } else {
             plugin.items().setStatus(uid, "ACTIVE", "returned");
-            long retry = System.currentTimeMillis() + plugin.configs().get("events.yml").getLong("retry-minutes", 60) * 60_000L;
-            plugin.state().set("nether_retry_at", retry);
             plugin.db().tx(c -> { MailService.insert(c, activator, key, "reward"); return null; });
-            Msg.broadcast("dim.ritual-failed", "&7Ритуал прерван. Ключ вернулся к владельцу (в почту). Повтор возможен через час.");
-            if (reason != null) Msg.broadcast("dim.ritual-failed-reason", "&7Причина: &f{r}", "r", reason);
+            if (cooldown) {
+                long retry = System.currentTimeMillis() + plugin.configs().get("events.yml").getLong("retry-minutes", 60) * 60_000L;
+                plugin.state().set("nether_retry_at", retry);
+                Msg.broadcast("dim.ritual-failed", "&7Ритуал прерван. Ключ вернулся к владельцу (в почту). Повтор возможен через час.");
+            } else {
+                Msg.broadcast("dim.ritual-failed-nocd", "&7Ритуал прерван. Ключ вернулся к владельцу (в почту). Можно повторить сразу.");
+            }
+            if (reason != null) {
+                Msg.broadcast("dim.ritual-failed-reason", "&7Причина: &f{r}", "r", reason);
+                plugin.getLogger().info("Ритуал Незера провален: " + reason);
+            }
         }
     }
 

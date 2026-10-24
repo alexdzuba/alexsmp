@@ -51,7 +51,11 @@ public final class RitualEvent extends GameEvent {
     private int seconds;
     private int noPlayers;
     private int totalSpawned;
+    private int waveStartedAt = -1;
+    private int killedThisWave;
+    private boolean vanishWarned;
     private String failReason = "время вышло";
+    private boolean cooldown = true;
 
     public RitualEvent(UnknownSMP plugin, EventService s, UUID activator, ItemStack key) {
         super(plugin, s);
@@ -71,6 +75,9 @@ public final class RitualEvent extends GameEvent {
 
     /** Почему ритуал не удался — показывается игрокам. */
     public String failReason() { return failReason; }
+
+    /** Задать причину провала извне (ошибка, остановка администратором). */
+    public void setFailReason(String reason, boolean cooldown) { this.failReason = reason; this.cooldown = cooldown; }
 
     @Override
     protected boolean setup() {
@@ -113,6 +120,8 @@ public final class RitualEvent extends GameEvent {
         int total = minutes() * 60;
         if (wave < 3 && seconds >= wave * (total / 3) + 5) {
             wave++;
+            waveStartedAt = seconds;
+            killedThisWave = 0;
             spawnWave(wave);
             announce("ritual.wave", "&c&lРитуал: волна {w}/3!", "w", wave);
         }
@@ -126,6 +135,14 @@ public final class RitualEvent extends GameEvent {
             } else bar.removePlayer(p);
         }
         noPlayers = nearby == 0 ? noPlayers + 1 : 0;
+        // Существа исчезли сразу после появления, хотя их никто не убил: мирная сложность или сторонний плагин удаляет мобов.
+        if (!vanishWarned && waveStartedAt >= 0 && seconds == waveStartedAt + 3 && alive() == 0 && killedThisWave == 0) {
+            vanishWarned = true;
+            String diff = String.valueOf(w.getDifficulty());
+            plugin.getLogger().warning("Ритуал: существа волны " + wave + " исчезли сразу после появления. Сложность мира " + w.getName() + ": " + diff
+                    + ". На PEACEFUL враждебные мобы удаляются; также проверьте плагины, очищающие мобов.");
+            announce("ritual.vanish", "&eСущества ритуала исчезают сразу после появления (сложность мира: {d}). Сообщите администрации.", "d", diff);
+        }
         int atAltar = 0;
         for (Entity e : spawned) {
             if (!e.isValid()) continue;
@@ -198,6 +215,7 @@ public final class RitualEvent extends GameEvent {
     public void death(EntityDeathEvent e) {
         if (!spawned.contains(e.getEntity())) return;
         e.getDrops().clear();
+        killedThisWave++;
         Player k = e.getEntity().getKiller();
         if (k != null) contribute(k, 2, "kill");
     }
@@ -235,6 +253,6 @@ public final class RitualEvent extends GameEvent {
 
     /** Итог ритуала: открыть Незер или вернуть ключ. */
     public void onFinish(boolean success, List<Map.Entry<UUID, Double>> qualified) {
-        plugin.dimensions().ritualFinished(success, activator, key, loc, failReason);
+        plugin.dimensions().ritualFinished(success, activator, key, loc, failReason, cooldown);
     }
 }

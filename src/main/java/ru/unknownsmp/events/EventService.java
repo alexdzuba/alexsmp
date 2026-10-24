@@ -108,7 +108,8 @@ public final class EventService implements Module {
         if (!LocalDate.now(Text.zone()).equals(scheduledFor)) planDay();
         if (active != null) {
             try { active.tick(); } catch (Throwable t) {
-                plugin.getLogger().warning("Ошибка события " + active.type() + ": " + t);
+                plugin.getLogger().log(java.util.logging.Level.WARNING, "Ошибка события " + active.type() + ": " + t, t);
+                if (active instanceof RitualEvent r) r.setFailReason("ошибка плагина (" + t.getClass().getSimpleName() + ") — подробности в консоли сервера", false);
                 finish(active, false);
                 return;
             }
@@ -231,6 +232,7 @@ public final class EventService implements Module {
     }
 
     public void stopActive() {
+        if (active instanceof RitualEvent r) r.setFailReason("остановлен администратором", false);
         if (active != null) finish(active, false);
         pending = null;
     }

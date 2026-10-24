@@ -1,3 +1,7 @@
+# Версия файла: при обновлении у существующего файла заменяется только список товаров торговца.
+config-version: 1
+upgrade-overwrite: [merchant.trades]
+
 # ============================================================
 #  События сервера и открытие измерений
 # ============================================================
@@ -77,6 +81,8 @@ riddles:
   - "Иди туда, где солнце садится раньше, чем ты успеешь испугаться."
 
 merchant:
+  # Сколько случайных товаров торговец привозит за один приход (не больше 7).
+  offers-per-visit: 7
   trades:
     strength: {item: "potion:strength_plus", price: 6000, stock: 3}
     guardian: {item: "potion:guardian", price: 7000, stock: 3}
@@ -84,6 +90,16 @@ merchant:
     totem: {item: "TOTEM_OF_UNDYING:1", price: 150000, stock: 1}
     boots: {item: "unique:wanderer_boots", price: 20000, stock: 2}
     helm: {item: "unique:seers_helm", price: 35000, stock: 1}
+    gapple: {item: "ENCHANTED_GOLDEN_APPLE", price: 80000, stock: 1}
+    elytra: {item: "ELYTRA", price: 1500000, stock: 1}
+    shulker: {item: "SHULKER_SHELL:2", price: 12000, stock: 3}
+    trident: {item: "TRIDENT", price: 25000, stock: 1}
+    star: {item: "NETHER_STAR", price: 350000, stock: 1}
+    book_telekinesis: {item: "ce:telekinesis", price: 32000, stock: 2}
+    book_autosmelt: {item: "ce:autosmelt", price: 48000, stock: 2}
+    book_feather: {item: "ce:feather", price: 48000, stock: 2}
+    book_lucky: {item: "ce:lucky:2", price: 160000, stock: 1}
+    book_drill: {item: "ce:drill", price: 120000, stock: 1}
 
 nether:
   # Шанс выдачи следующего осколка Незера лучшему участнику успешного события (пока Незер закрыт).

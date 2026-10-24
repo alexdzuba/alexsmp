@@ -332,9 +332,10 @@ public final class NpcService implements Module, Listener {
                 for (Trade t : n.trades()) {
                     var preview = plugin.items().resolve(t.item().startsWith("unique:") ? null : t.item(), "", "").getNow(null);
                     String name = preview == null ? t.item() : Items.itemName(preview);
+                    final long price = plugin.shop() == null ? t.price() : plugin.shop().safePrice(preview, t.price());
                     set(slot++, Items.of(preview == null ? Material.NETHER_STAR : preview.getType()).name("&e" + name)
-                            .lore("&7Цена: &6" + Text.money(t.price()), "", "&eНажмите, чтобы купить").amount(preview == null ? 1 : preview.getAmount()).build(),
-                            c -> ConfirmMenu.open(viewer, "&8Купить за " + Text.money(t.price()) + "?", null, List.of("&7" + name), () -> buy(viewer, n, t)));
+                            .lore("&7Цена: &6" + Text.money(price), "", "&eНажмите, чтобы купить").amount(preview == null ? 1 : preview.getAmount()).build(),
+                            c -> ConfirmMenu.open(viewer, "&8Купить за " + Text.money(price) + "?", null, List.of("&7" + name), () -> buy(viewer, n, t, price)));
                     if (slot == 17) slot = 19;
                     if (slot > 25) break;
                 }
@@ -346,23 +347,23 @@ public final class NpcService implements Module, Listener {
 
     private final java.util.Set<UUID> busy = ConcurrentHashMap.newKeySet();
 
-    private void buy(Player p, Npc n, Trade t) {
+    private void buy(Player p, Npc n, Trade t, long price) {
         if (!plugin.economy().tradeAllowed(p)) return;
         if (!busy.add(p.getUniqueId())) return;
-        Tasks.then(plugin.economy().withdraw(p.getUniqueId(), t.price(), "npc_trade", n.id() + ":" + t.item()), bal ->
+        Tasks.then(plugin.economy().withdraw(p.getUniqueId(), price, "npc_trade", n.id() + ":" + t.item()), bal ->
                 Tasks.then(plugin.items().resolve(t.item(), p.getName(), "npc:" + n.id()), it -> {
                     busy.remove(p.getUniqueId());
                     if (it == null) {
-                        plugin.economy().deposit(p.getUniqueId(), t.price(), "npc_refund", n.id());
+                        plugin.economy().deposit(p.getUniqueId(), price, "npc_refund", n.id());
                         Msg.error(p, "npc.unavailable", "Товар недоступен — деньги возвращены.");
                         return;
                     }
                     plugin.mail().giveOrMail(p, it, "reward");
-                    Msg.ok(p, "npc.bought", "Куплено: {i} за {p}.", "i", Items.itemName(it), "p", Text.money(t.price()));
-                    plugin.logs().log(p, "market", "npc_trade", p.getLocation(), n.id() + " " + t.item() + " " + t.price());
+                    Msg.ok(p, "npc.bought", "Куплено: {i} за {p}.", "i", Items.itemName(it), "p", Text.money(price));
+                    plugin.logs().log(p, "market", "npc_trade", p.getLocation(), n.id() + " " + t.item() + " " + price);
                 }, err -> {
                     busy.remove(p.getUniqueId());
-                    plugin.economy().deposit(p.getUniqueId(), t.price(), "npc_refund", n.id());
+                    plugin.economy().deposit(p.getUniqueId(), price, "npc_refund", n.id());
                 }), err -> {
             busy.remove(p.getUniqueId());
             if (err instanceof ru.unknownsmp.db.Database.TxAbort ab) Msg.error(p, ab.key, ab.def);

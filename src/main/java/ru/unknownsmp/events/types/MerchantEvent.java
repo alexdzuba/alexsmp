@@ -41,8 +41,16 @@ public final class MerchantEvent extends GameEvent {
         super(plugin, s);
         ConfigurationSection sec = plugin.configs().get("events.yml").getConfigurationSection("merchant.trades");
         if (sec != null) for (String id : sec.getKeys(false)) {
-            offers.add(new Offer(id, sec.getString(id + ".item"), sec.getLong(id + ".price", 1000), sec.getInt(id + ".stock", 3)));
+            String spec = sec.getString(id + ".item");
+            long price = sec.getLong(id + ".price", 1000);
+            if (spec != null && !spec.startsWith("unique:") && plugin.shop() != null)
+                price = plugin.shop().safePrice(plugin.items().resolve(spec, "", "").getNow(null), price);
+            offers.add(new Offer(id, spec, price, sec.getInt(id + ".stock", 3)));
         }
+        // Каждый приход — случайный набор товаров (в меню помещается 7).
+        java.util.Collections.shuffle(offers);
+        int per = Math.max(1, Math.min(7, plugin.configs().get("events.yml").getInt("merchant.offers-per-visit", 7)));
+        while (offers.size() > per) offers.remove(offers.size() - 1);
     }
 
     @Override public String type() { return "merchant"; }

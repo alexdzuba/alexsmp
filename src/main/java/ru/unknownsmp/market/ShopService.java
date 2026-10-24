@@ -275,6 +275,15 @@ public final class ShopService implements Module {
         return d <= 0 ? -1 : Math.max(1, (long) Math.floor(d));
     }
 
+    /** Цена товара у NPC/торговца не ниже цены скупки +10%: иначе купить и сразу продать серверу было бы выгодно. */
+    public long safePrice(ItemStack preview, long price) {
+        if (preview == null || preview.getType().isAir()) return price;
+        double s = sellExact(preview);
+        if (s <= 0) return price;
+        long min = (long) Math.ceil(s * preview.getAmount() * 1.1);
+        return Math.max(price, min);
+    }
+
     /** Точная (дробная) цена скупки одной штуки: округляется только итог продажи, поэтому крафт не даёт прибыли на округлении. -1 — не принимается. */
     public double sellExact(ItemStack it) {
         if (it == null || it.getType().isAir()) return -1;

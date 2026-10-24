@@ -8,7 +8,9 @@
 #  Управление в игре: /usmp npc ... и панель владельца → NPC.
 # ============================================================
 #  Место NPC можно задать так: "@anchor:<имя>" — точка постройки (лобби/город), создаётся автоматически при строительстве.
-config-version: 5
+config-version: 6
+# При обновлении у существующего файла заменяются только эти ключи (списки товаров), остальное сохраняется.
+upgrade-overwrite: [npcs.smith.trades, npcs.alchemist.trades, npcs.trader_market.trades]
 npcs:
   # ---------------- Лобби ----------------
   guide:
@@ -74,10 +76,19 @@ npcs:
     location: "@anchor:smith"
     trades:
       - {item: "IRON_INGOT:16", price: 400}
+      - {item: "GOLD_INGOT:16", price: 800}
+      - {item: "DIAMOND:4", price: 4000}
       - {item: "DIAMOND_PICKAXE#efficiency=2", price: 2500}
+      - {item: "DIAMOND_PICKAXE#efficiency=4,unbreaking=3", price: 9000}
       - {item: "DIAMOND_SWORD#sharpness=1", price: 2500}
+      - {item: "DIAMOND_SWORD#sharpness=4,unbreaking=3", price: 9000}
+      - {item: "DIAMOND_AXE#efficiency=3,unbreaking=2", price: 6000}
+      - {item: "DIAMOND_CHESTPLATE#protection=2", price: 8000}
+      - {item: "DIAMOND_HELMET#protection=2", price: 5000}
       - {item: "SHIELD#unbreaking=2", price: 400}
       - {item: "ANVIL", price: 900}
+      - {item: "NETHERITE_UPGRADE_SMITHING_TEMPLATE", price: 30000}
+      - {item: "ce:unbreakable", price: 450000}
   alchemist:
     name: "&5Алхимик"
     role: TRADER
@@ -88,7 +99,15 @@ npcs:
       - {item: "potion:fire_plus", price: 3000}
       - {item: "potion:speed_plus", price: 3500}
       - {item: "potion:explorer", price: 3000}
+      - {item: "potion:strength_plus", price: 7000}
+      - {item: "potion:guardian", price: 8000}
+      - {item: "potion:regen_plus", price: 6000}
       - {item: "BLAZE_POWDER:4", price: 400}
+      - {item: "NETHER_WART:16", price: 500}
+      - {item: "GLOWSTONE_DUST:16", price: 500}
+      - {item: "REDSTONE:32", price: 400}
+      - {item: "GHAST_TEAR", price: 1500}
+      - {item: "BREWING_STAND", price: 600}
       - {item: "GLASS_BOTTLE:8", price: 40}
   banker:
     name: "&6Банкир"
@@ -116,9 +135,18 @@ npcs:
     trades:
       - {item: "BREAD:16", price: 120}
       - {item: "COOKED_BEEF:16", price: 300}
+      - {item: "BAKED_POTATO:16", price: 250}
       - {item: "GOLDEN_CARROT:8", price: 400}
+      - {item: "PUMPKIN_PIE:8", price: 300}
+      - {item: "CAKE", price: 300}
       - {item: "TORCH:32", price: 60}
       - {item: "WHEAT_SEEDS:16", price: 40}
+      - {item: "MELON_SEEDS:8", price: 80}
+      - {item: "SUGAR_CANE:16", price: 200}
+      - {item: "BONE_MEAL:32", price: 250}
+      - {item: "OAK_SAPLING:8", price: 100}
+      - {item: "HAY_BLOCK:8", price: 400}
+      - {item: "EGG:16", price: 150}
   herald:
     name: "&b&lГлашатай"
     role: SERVICE

@@ -411,6 +411,15 @@ public final class ItemService implements Module, Listener {
         if (spec.startsWith("unique:")) {
             return create(spec.substring(7), holder, note).exceptionally(t -> null);
         }
+        if (spec.startsWith("ce:") && plugin.enchants() != null) {
+            // Книга особых чар: "ce:<id>[:уровень]".
+            String[] p = spec.substring(3).split(":");
+            var en = ru.unknownsmp.items.CustomEnchantService.all().get(p[0]);
+            if (en == null) return CompletableFuture.completedFuture(null);
+            int lvl = 1;
+            if (p.length > 1) try { lvl = Math.max(1, Math.min(en.max(), Integer.parseInt(p[1]))); } catch (NumberFormatException ignored) {}
+            return CompletableFuture.completedFuture(plugin.enchants().book(en, lvl));
+        }
         if (spec.startsWith("potion:")) {
             String[] p = spec.substring(7).split(":");
             ItemStack it = potion(p[0]);

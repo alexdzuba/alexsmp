@@ -92,9 +92,9 @@ public final class CustomEnchantService implements Module, Listener {
     private static final Map<String, Ench> ALL = new LinkedHashMap<>();
 
     static {
-        reg(new Ench("autosmelt", "Автоплавка", 1, Target.DIGGER, 60_000, "Руда и песок сразу выпадают переплавленными"));
+        reg(new Ench("autosmelt", "Автоплавка", 1, Target.DIGGER, 60_000, "Руда сразу выпадает слитками (только руды)"));
         reg(new Ench("telekinesis", "Телекинез", 1, Target.TOOL, 40_000, "Добыча и лут с мобов сразу в инвентарь"));
-        reg(new Ench("drill", "Бур", 1, Target.DIGGER, 150_000, "Копает область 3×3"));
+        reg(new Ench("drill", "Бур", 1, Target.DIGGER, 150_000, "Копает область 3×3. Режим: присесть + колёсико"));
         reg(new Ench("timber", "Лесоруб", 1, Target.AXE, 80_000, "Срубает дерево целиком (не работает приседая)"));
         reg(new Ench("vampire", "Вампиризм", 3, Target.WEAPON, 30_000, "Лечит на 5% урона за уровень"));
         reg(new Ench("thunder", "Громовержец", 2, Target.SWORD, 50_000, "Шанс 6% за уровень ударить молнией"));
@@ -119,13 +119,6 @@ public final class CustomEnchantService implements Module, Listener {
         SMELT.put(Material.COPPER_ORE, Material.COPPER_INGOT);
         SMELT.put(Material.DEEPSLATE_COPPER_ORE, Material.COPPER_INGOT);
         SMELT.put(Material.ANCIENT_DEBRIS, Material.NETHERITE_SCRAP);
-        SMELT.put(Material.COBBLESTONE, Material.STONE);
-        SMELT.put(Material.COBBLED_DEEPSLATE, Material.DEEPSLATE);
-        SMELT.put(Material.SAND, Material.GLASS);
-        SMELT.put(Material.RED_SAND, Material.GLASS);
-        SMELT.put(Material.CLAY_BALL, Material.BRICK);
-        SMELT.put(Material.NETHERRACK, Material.NETHER_BRICK);
-        SMELT.put(Material.WET_SPONGE, Material.SPONGE);
     }
 
     private final UnknownSMP plugin;
@@ -177,6 +170,82 @@ public final class CustomEnchantService implements Module, Listener {
     private static org.bukkit.NamespacedKey key() { return Keys.of("ce"); }
     private static org.bukkit.NamespacedKey loreKey() { return Keys.of("ce_n"); }
     private static org.bukkit.NamespacedKey bookKey() { return Keys.of("ce_book"); }
+    private static org.bukkit.NamespacedKey modeKey() { return Keys.of("ce_mode"); }
+
+    /** Режим кирки/лопаты с Буром и/или Автоплавкой. Переключается: присесть + колёсико мыши. */
+    public enum Mode {
+        NONE("&7Ничего"), DRILL("&eБур"), SMELT("&6Автоплавка"), BOTH("&eБур &7+ &6Автоплавка");
+
+        public final String display;
+
+        Mode(String d) { display = d; }
+    }
+
+    /** Доступные режимы для предмета (по наложенным чарам). */
+    private static List<Mode> modesFor(Map<String, Integer> m) {
+        boolean d = m.containsKey("drill"), a = m.containsKey("autosmelt");
+        List<Mode> out = new ArrayList<>();
+        if (!d && !a) return out;
+        out.add(Mode.NONE);
+        if (d) out.add(Mode.DRILL);
+        if (a) out.add(Mode.SMELT);
+        if (d && a) out.add(Mode.BOTH);
+        return out;
+    }
+
+    /** Текущий режим; по умолчанию включено всё, что есть на предмете. */
+    public static Mode mode(ItemStack it, Map<String, Integer> m) {
+        List<Mode> av = modesFor(m);
+        if (av.isEmpty()) return Mode.NONE;
+        String s = it.getItemMeta().getPersistentDataContainer().get(modeKey(), PersistentDataType.STRING);
+        if (s != null) {
+            try { Mode md = Mode.valueOf(s); if (av.contains(md)) return md; } catch (IllegalArgumentException ignored) {}
+        }
+        return av.get(av.size() - 1);
+    }
+
+    private static boolean drillOn(ItemStack it, Map<String, Integer> m) {
+        if (!m.containsKey("drill")) return false;
+        Mode md = mode(it, m);
+        return md == Mode.DRILL || md == Mode.BOTH;
+    }
+
+    private static boolean smeltOn(ItemStack it, Map<String, Integer> m) {
+        if (!m.containsKey("autosmelt")) return false;
+        Mode md = mode(it, m);
+        return md == Mode.SMELT || md == Mode.BOTH;
+    }
+
+    private static boolean isOre(Material m) {
+        return m.name().endsWith("_ORE") || m == Material.ANCIENT_DEBRIS;
+    }
+
+    /** Присесть + прокрутить колёсико: переключение режима вместо смены слота. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void wheel(org.bukkit.event.player.PlayerItemHeldEvent e) {
+        if (!enabled) return;
+        Player p = e.getPlayer();
+        if (!p.isSneaking()) return;
+        int diff = (e.getNewSlot() - e.getPreviousSlot() + 9) % 9;
+        if (diff != 1 && diff != 8) return; // клавиши 1–9 переключают слот как обычно
+        ItemStack it = p.getInventory().getItem(e.getPreviousSlot());
+        if (it == null || it.getType().isAir()) return;
+        Map<String, Integer> m = read(it);
+        List<Mode> av = modesFor(m);
+        if (av.isEmpty()) return;
+        e.setCancelled(true);
+        int idx = av.indexOf(mode(it, m));
+        Mode next = av.get(Math.floorMod(idx + (diff == 1 ? 1 : -1), av.size()));
+        ItemMeta meta = it.getItemMeta();
+        meta.getPersistentDataContainer().set(modeKey(), PersistentDataType.STRING, next.name());
+        it.setItemMeta(meta);
+        write(it, m);
+        p.getInventory().setItem(e.getPreviousSlot(), it);
+        StringBuilder bar = new StringBuilder("&7Режим: ");
+        for (Mode md : av) bar.append(md == next ? "&l" + md.display + "&r" : "&8" + Text.strip(md.display)).append("  ");
+        Msg.actionBar(p, bar.toString().trim());
+        Msg.sound(p, Sound.UI_BUTTON_CLICK, 0.6f, next == Mode.NONE ? 0.8f : 1.4f);
+    }
 
     public static Map<String, Integer> read(ItemStack it) {
         Map<String, Integer> out = new LinkedHashMap<>();
@@ -210,6 +279,12 @@ public final class CustomEnchantService implements Module, Listener {
         for (var e : map.entrySet()) {
             Ench en = ALL.get(e.getKey());
             ours.add("&d" + en.name() + (en.max() > 1 ? " " + roman(e.getValue()) : ""));
+        }
+        if (!modesFor(map).isEmpty()) {
+            it.setItemMeta(meta);
+            ours.add("&7Режим: " + mode(it, map).display + " &8(присесть + колёсико)");
+            meta = it.getItemMeta();
+            pdc = meta.getPersistentDataContainer();
         }
         List<Component> res = new ArrayList<>(Text.lore(ours));
         res.addAll(lore);
@@ -286,7 +361,7 @@ public final class CustomEnchantService implements Module, Listener {
         ItemStack tool = p.getInventory().getItemInMainHand();
         Map<String, Integer> m = read(tool);
         if (m.isEmpty()) return;
-        boolean smelt = m.containsKey("autosmelt"), tele = m.containsKey("telekinesis");
+        boolean smelt = smeltOn(tool, m) && isOre(e.getBlockState().getType()), tele = m.containsKey("telekinesis");
         Iterator<Item> it = e.getItems().iterator();
         while (it.hasNext()) {
             Item item = it.next();
@@ -321,7 +396,7 @@ public final class CustomEnchantService implements Module, Listener {
         if (m.containsKey("timber") && Tag.LOGS.isTagged(origin.getType()) && !p.isSneaking()) {
             List<Block> logs = collectTree(origin);
             Tasks.later(1, () -> breakAll(p, logs));
-        } else if (m.containsKey("drill") && !p.isSneaking()) {
+        } else if (drillOn(tool, m)) {
             BlockFace face = p.getTargetBlockFace(6);
             if (face == null) face = BlockFace.UP;
             List<Block> area = new ArrayList<>();
@@ -362,6 +437,18 @@ public final class CustomEnchantService implements Module, Listener {
     }
 
     /** Ломает блоки от имени игрока: каждое разрушение проходит через события (приваты, журнал, войны). */
+    /** Опыт за руду как в ванилле (с «Шёлковым касанием» опыта нет). */
+    private int oreXp(Material type, ItemStack tool) {
+        if (tool.containsEnchantment(org.bukkit.enchantments.Enchantment.SILK_TOUCH)) return 0;
+        String n = type.name();
+        if (n.contains("COAL_ORE")) return rnd.nextInt(3);
+        if (n.contains("DIAMOND_ORE") || n.contains("EMERALD_ORE")) return 3 + rnd.nextInt(5);
+        if (n.contains("LAPIS_ORE") || n.contains("NETHER_QUARTZ_ORE")) return 2 + rnd.nextInt(4);
+        if (n.contains("REDSTONE_ORE")) return 1 + rnd.nextInt(5);
+        if (n.equals("NETHER_GOLD_ORE")) return rnd.nextInt(2);
+        return 0;
+    }
+
     private void breakAll(Player p, List<Block> blocks) {
         if (!p.isOnline() || blocks.isEmpty()) return;
         chainGuard.add(p.getUniqueId());
@@ -373,9 +460,37 @@ public final class CustomEnchantService implements Module, Listener {
                 BlockBreakEvent ev = new BlockBreakEvent(b, p);
                 Bukkit.getPluginManager().callEvent(ev);
                 if (ev.isCancelled()) continue;
-                // Другой обработчик запретил выпадение (например, камень заработка уже вернул себя предметом).
-                if (!ev.isDropItems()) b.setType(Material.AIR);
-                else b.breakNaturally(tool, true, true);
+                Map<String, Integer> m = read(tool);
+                boolean smelt = smeltOn(tool, m), tele = m.containsKey("telekinesis");
+                if (!ev.isDropItems()) {
+                    // Другой обработчик запретил выпадение (например, камень заработка уже вернул себя предметом).
+                    b.setType(Material.AIR);
+                } else if (!smelt && !tele) {
+                    b.breakNaturally(tool, true, true);
+                } else {
+                    // Сами собираем добычу, чтобы Автоплавка и Телекинез работали на всей области Бура.
+                    Material type = b.getType();
+                    var data = b.getBlockData();
+                    var drops = b.getDrops(tool, p);
+                    org.bukkit.Location at = b.getLocation().add(0.5, 0.5, 0.5);
+                    b.setType(Material.AIR);
+                    b.getWorld().spawnParticle(org.bukkit.Particle.BLOCK, at, 12, 0.3, 0.3, 0.3, data);
+                    b.getWorld().playSound(at, data.getSoundGroup().getBreakSound(), 0.8f, 1f);
+                    for (ItemStack d : drops) {
+                        if (smelt && isOre(type)) {
+                            Material to = SMELT.get(d.getType());
+                            if (to != null) d = new ItemStack(to, d.getAmount());
+                        }
+                        if (tele) {
+                            var left = p.getInventory().addItem(d);
+                            for (ItemStack l : left.values()) b.getWorld().dropItemNaturally(at, l);
+                        } else {
+                            b.getWorld().dropItemNaturally(at, d);
+                        }
+                    }
+                    int xp = oreXp(type, tool);
+                    if (xp > 0) b.getWorld().spawn(at, org.bukkit.entity.ExperienceOrb.class, o -> o.setExperience(xp));
+                }
                 p.damageItemStack(EquipmentSlot.HAND, 1);
             }
         } finally {

@@ -240,6 +240,11 @@ public final class AdminService implements Module, Listener {
             case "event" -> event(s, r);
             case "nether", "end" -> {
                 if (!need(s, "usmp.admin.events") || r.length < 1) return;
+                if (sub.equals("nether") && r[0].equalsIgnoreCase("resetcd")) {
+                    plugin.state().set("nether_retry_at", 0L);
+                    Msg.ok(s, "admin.nether-resetcd", "Откат ритуала Незера сброшен — ключ можно использовать сразу.");
+                    return;
+                }
                 boolean open = r[0].equalsIgnoreCase("open");
                 if (sub.equals("nether")) plugin.dimensions().forceNether(open); else plugin.dimensions().forceEnd(open);
                 Msg.ok(s, "admin.dim", "{d}: {s}", "d", sub, "s", open ? "открыт" : "закрыт");
@@ -506,7 +511,7 @@ public final class AdminService implements Module, Listener {
                 {"usmp.admin.economy", "/usmp money give|take|set <игрок> <сумма>"},
                 {"usmp.admin.items", "/usmp item give|potion <игрок> <id> | list"},
                 {"usmp.admin.npc", "/usmp npc create <id> <VILLAGER|MANNEQUIN|TRADER> [скин/профессия] | remove | move | list | name | dialogue | action | role"},
-                {"usmp.admin.events", "/usmp event start <meteor|cache|anomaly|merchant|secrets> | stop; /usmp nether|end open|close"},
+                {"usmp.admin.events", "/usmp event start <meteor|cache|anomaly|merchant|secrets> | stop; /usmp nether|end open|close; /usmp nether resetcd"},
                 {"usmp.admin.rollback", "/usmp rollback <игрок|*> <время> [радиус]"},
                 {"usmp.mod.inspect", "/usmp inspect — история блоков"},
                 {"usmp.mod.vanish", "/usmp vanish"},
@@ -701,7 +706,8 @@ public final class AdminService implements Module, Listener {
             case "item" -> List.of("give", "potion", "list");
             case "npc" -> List.of("create", "remove", "move", "list", "name", "dialogue", "action", "role", "skin");
             case "event" -> List.of("start", "stop");
-            case "nether", "end" -> List.of("open", "close");
+            case "nether" -> List.of("open", "close", "resetcd");
+            case "end" -> List.of("open", "close");
             case "maintenance" -> List.of("on", "off");
             case "auth" -> List.of("reset", "unlock", "unregister", "revoke");
             case "gm" -> List.of("0", "1", "2", "3");

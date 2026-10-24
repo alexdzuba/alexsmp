@@ -115,8 +115,12 @@ public final class RitualEvent extends GameEvent {
     protected void tick() {
         seconds++;
         World w = loc.getWorld();
-        w.spawnParticle(Particle.FLAME, loc.clone().add(0, 1.2, 0), 12, 0.5, 0.8, 0.5, 0.02);
-        w.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 2, 0), 6, 2.5, 0.2, 2.5, 0.01);
+        try {
+            w.spawnParticle(Particle.FLAME, loc.clone().add(0, 1.2, 0), 12, 0.5, 0.8, 0.5, 0.02);
+            w.spawnParticle(Particle.SOUL_FIRE_FLAME, loc.clone().add(0, 2, 0), 6, 2.5, 0.2, 2.5, 0.01);
+        } catch (Throwable ignored) {}
+        int radius = Math.max(16, cfgInt("defend-radius", 64));
+        int abandon = Math.max(30, cfgInt("abandon-seconds", 120));
         int total = minutes() * 60;
         if (wave < 3 && seconds >= wave * (total / 3) + 5) {
             wave++;
@@ -127,7 +131,7 @@ public final class RitualEvent extends GameEvent {
         }
         int nearby = 0;
         for (Player p : w.getPlayers()) {
-            boolean in = near(p, 40) && plugin.auth().isAuthed(p);
+            boolean in = near(p, radius) && plugin.auth().isAuthed(p);
             if (in) {
                 nearby++;
                 bar.addPlayer(p);
@@ -145,15 +149,21 @@ public final class RitualEvent extends GameEvent {
         }
         int atAltar = 0;
         for (Entity e : spawned) {
-            if (!e.isValid()) continue;
-            double d2 = e.getLocation().distanceSquared(loc);
-            if (d2 <= 9) atAltar++;
-            // Существо улетело или застряло далеко (ифриты, мобы на деревьях) — возвращаем к алтарю, иначе волну не добить.
-            if (d2 > 48 * 48 || (seconds % 30 == 0 && d2 > 24 * 24)) {
-                e.teleport(groundNear(10));
-            }
-            if (e instanceof Monster m && m.getTarget() == null) {
-                for (Player p : w.getPlayers()) if (near(p, 40)) { m.setTarget(p); break; }
+            // Ошибка с одним существом не должна обрывать весь ритуал.
+            try {
+                if (!e.isValid()) continue;
+                if (!w.equals(e.getWorld())) { e.remove(); continue; }
+                double d2 = e.getLocation().distanceSquared(loc);
+                if (d2 <= 9) atAltar++;
+                // Существо улетело или застряло далеко (ифриты, мобы на деревьях) — возвращаем к алтарю, иначе волну не добить.
+                if (d2 > 48 * 48 || (seconds % 30 == 0 && d2 > 24 * 24)) {
+                    e.teleport(groundNear(10));
+                }
+                if (e instanceof Monster m && m.getTarget() == null) {
+                    for (Player p : w.getPlayers()) if (near(p, radius)) { m.setTarget(p); break; }
+                }
+            } catch (Throwable t) {
+                plugin.getLogger().warning("Ритуал: ошибка с существом " + e.getType() + ": " + t);
             }
         }
         // Урон алтарю: не больше max-damage-per-second в секунду, иначе толпа третьей волны,
@@ -161,7 +171,7 @@ public final class RitualEvent extends GameEvent {
         int dmg = Math.min(atAltar, Math.max(1, cfgInt("max-damage-per-second", 2)));
         hp -= dmg;
         if (dmg > 0 && seconds % 5 == 0) {
-            for (Player p : w.getPlayers()) if (near(p, 40)) Msg.actionBar(p, "&c⚠ Алтарь атакуют! Отводите существ от алтаря.");
+            for (Player p : w.getPlayers()) if (near(p, radius)) Msg.actionBar(p, "&c⚠ Алтарь атакуют! Отводите существ от алтаря.");
         }
         int maxHp = Math.max(1, cfgInt("altar-hp", 100));
         bar.setProgress(Math.max(0, Math.min(1, hp / (double) maxHp)));
@@ -171,8 +181,8 @@ public final class RitualEvent extends GameEvent {
             finishNow();
             return;
         }
-        if (noPlayers >= 60) {
-            failReason = "рядом с алтарём (40 блоков) никого не было больше минуты";
+        if (noPlayers >= abandon) {
+            failReason = "рядом с алтарём (" + radius + " блоков) никого не было " + abandon + " сек.";
             finishNow();
             return;
         }
@@ -187,13 +197,17 @@ public final class RitualEvent extends GameEvent {
         int count = 4 + n * 3;
         for (int i = 0; i < count; i++) {
             double a = rnd.nextDouble() * Math.PI * 2;
-            Location spot = ground((int) (loc.getX() + Math.cos(a) * 14), (int) (loc.getZ() + Math.sin(a) * 14));
-            LivingEntity m = (LivingEntity) w.spawnEntity(spot, types[rnd.nextInt(types.length)]);
-            totalSpawned++;
-            if (m instanceof PiglinAbstract pa) pa.setImmuneToZombification(true);
-            m.customName(Text.c("&4Порождение Незера"));
-            m.setRemoveWhenFarAway(false);
-            mark(m);
+            try {
+                Location spot = ground((int) (loc.getX() + Math.cos(a) * 14), (int) (loc.getZ() + Math.sin(a) * 14));
+                LivingEntity m = (LivingEntity) w.spawnEntity(spot, types[rnd.nextInt(types.length)]);
+                totalSpawned++;
+                if (m instanceof PiglinAbstract pa) pa.setImmuneToZombification(true);
+                m.customName(Text.c("&4Порождение Незера"));
+                m.setRemoveWhenFarAway(false);
+                mark(m);
+            } catch (Throwable t) {
+                plugin.getLogger().warning("Ритуал: не удалось призвать существо волны " + n + ": " + t);
+            }
         }
     }
 
@@ -232,7 +246,7 @@ public final class RitualEvent extends GameEvent {
 
     @Override
     protected boolean succeeded() {
-        if (hp <= 0 || noPlayers >= 60) return false;
+        if (hp <= 0 || noPlayers >= Math.max(30, cfgInt("abandon-seconds", 120))) return false;
         if (wave < 3) { failReason = "не дошли до третьей волны"; return false; }
         // Раньше по истечении времени ритуал проваливался, если жив был хотя бы один моб (часто — улетевший ифрит).
         // Теперь алтарь выстоял и почти все существа убиты — это победа; остатки исчезнут вместе с алтарём.

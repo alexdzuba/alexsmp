@@ -1,0 +1,71 @@
+name: UnknownSMP
+version: '${version}'
+main: ru.unknownsmp.core.UnknownSMP
+api-version: '1.21'
+load: POSTWORLD
+prefix: ALEX SMP
+authors: [ALEX SMP]
+description: Единый плагин сервера ALEX SMP — авторизация, лобби, SMP, дуэли, экономика, кланы, события, NPC, прогрессия и администрирование.
+
+commands:
+  register: {description: Регистрация аккаунта, aliases: [reg]}
+  login: {description: Вход в аккаунт, aliases: [l, log]}
+  changepassword: {description: Смена пароля, aliases: [cp, changepw]}
+  logout: {description: Завершить сессию}
+  lobby: {description: Вернуться в лобби, aliases: [hub]}
+  play: {description: Войти в режим SMP, aliases: [survival, smp]}
+  daily: {description: Подарок дня}
+  parkour: {description: Паркур лобби, aliases: [pk]}
+  duels: {description: Режим дуэлей}
+  duel: {description: Вызов на дуэль}
+  spawn: {description: Телепорт на спавн}
+  sethome: {description: Установить дом}
+  home: {description: Телепорт домой}
+  delhome: {description: Удалить дом}
+  homes: {description: Меню домов}
+  tpa: {description: Запрос телепортации}
+  tpr: {description: Принять запрос телепортации / отправить запрос}
+  tpd: {description: Отклонить запрос телепортации}
+  tpaccept: {description: Принять запрос телепортации, aliases: [tpyes]}
+  buyhome: {description: Докупить слот дома}
+  worth: {description: Цена предмета в руке}
+  tpdeny: {description: Отклонить запрос телепортации, aliases: [tpno]}
+  balance: {description: Баланс, aliases: [bal, money]}
+  pay: {description: Перевод денег}
+  mail: {description: Почта}
+  shop: {description: Серверный магазин}
+  sell: {description: Скупка предметов}
+  ah: {description: Аукцион игроков, aliases: [auction]}
+  orders: {description: Ордера на покупку и продажу}
+  clan: {description: Кланы, aliases: [clans, guild]}
+  cc: {description: Клановый чат}
+  events: {description: События сервера, aliases: [event]}
+  dimensions: {description: Открытие измерений, aliases: [dim]}
+  quests: {description: Задания, aliases: [q, quest]}
+  bounty: {description: Награды за голову, aliases: [bounties]}
+  top: {description: Таблицы лидеров, aliases: [leaderboard]}
+  baltop: {description: Самые богатые игроки}
+  chat: {description: Режим чата}
+  kick: {description: Отключить игрока}
+  ban: {description: Постоянный бан}
+  tempban: {description: Временный бан}
+  unban: {description: Снять бан, aliases: [pardon]}
+  mute: {description: Мут}
+  unmute: {description: Снять мут}
+  warn: {description: Предупреждение}
+  traderestrict: {description: Ограничить торговлю}
+  history: {description: История наказаний}
+  punish: {description: Меню наказаний}
+  report: {description: Пожаловаться на игрока}
+  reports: {description: Просмотр жалоб}
+  luck: {description: Уровень удачи игрока}
+  zhora: {description: ИИ-персонаж Жора, aliases: [жора]}
+  unknownsmp: {description: Администрирование ALEX SMP, aliases: [usmp]}
+  menu: {description: Главное меню, aliases: [m, gui]}
+  settings: {description: Настройки игрока}
+  profile: {description: Профиль и статистика, aliases: [stats]}
+  titles: {description: Титулы}
+  achievements: {description: Достижения, aliases: [ach]}
+  ranks: {description: Ранги прогрессии, aliases: [rank]}
+  rules: {description: Правила сервера}
+  help: {description: Список команд}

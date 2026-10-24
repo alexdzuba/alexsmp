@@ -1,0 +1,27 @@
+# ============================================================
+#  Готовые постройки (структуры Minecraft .nbt)
+#  Файлы кладите в plugins/UnknownSMP/structures/. Здесь указывайте, что и куда ставить.
+#  Каждая запись ставится автоматически ОДИН раз; чтобы поставить заново — увеличьте version.
+#  Команды в игре: /usmp structure list | place <файл> [0|90|180|270] [center] | pos1 | pos2 | save <имя>
+#  Поля записи:
+#    file:     имя файла (castle.nbt)
+#    world:    имя мира (usmp_lobby — лобби, world — выживание)
+#    location: "x;y;z" — минимальный угол постройки (или центр, если center: true)
+#    rotation: 0, 90, 180 или 270
+#    mirror:   NONE, LEFT_RIGHT, FRONT_BACK
+#    entities: переносить ли сущности (рамки, стойки)
+#    version:  номер версии записи
+#  Пример (раскомментируйте и поправьте):
+#  structures:
+#    spawn_castle:
+#      file: "castle.nbt"
+#      world: "usmp_lobby"
+#      location: "0;100;0"
+#      rotation: 0
+#      mirror: NONE
+#      entities: false
+#      center: true
+#      version: 1
+# ============================================================
+config-version: 1
+structures: {}

@@ -1,0 +1,110 @@
+# ============================================================
+#  Режим «Дуэли» — наборы как на MCTiers
+#  Вещи SMP при входе сохраняются в БД и полностью возвращаются при выходе.
+# ============================================================
+config-version: 2
+
+world: "usmp_duels"
+arenas: 4
+countdown-seconds: 5
+match-seconds: 420
+# Естественная регенерация здоровья в дуэлях (false = лечиться только предметами). Голод в дуэлях всегда отключён.
+natural-regeneration: false
+time: 13000
+
+# Тиры (как на MCTiers): рейтинг набора → тир. Порядок: LT5, HT5, LT4, HT4, LT3, HT3, LT2, HT2, LT1, HT1.
+# Каждый игрок начинает с 1000 (LT5). Рядом с ником показывается лучший тир по всем наборам.
+tiers: [0, 1030, 1080, 1140, 1210, 1290, 1380, 1480, 1590, 1710]
+
+# Предметы: MATERIAL[@тип_зелья][:кол-во][#чары=уровень,...][*повторов]
+# build: true — на арене можно ставить блоки, лить воду/лаву, ставить кристаллы (после боя арена восстанавливается).
+kits:
+  sword:
+    name: "&fSword"
+    icon: DIAMOND_SWORD
+    description: "Чистый мечевой бой: тайминги и стрейфы"
+    helmet: "DIAMOND_HELMET#protection=3,unbreaking=3"
+    chestplate: "DIAMOND_CHESTPLATE#protection=3,unbreaking=3"
+    leggings: "DIAMOND_LEGGINGS#protection=3,unbreaking=3"
+    boots: "DIAMOND_BOOTS#protection=3,unbreaking=3"
+    items: ["DIAMOND_SWORD#sharpness=4", "COOKED_BEEF:16"]
+  axe:
+    name: "&6Axe"
+    icon: DIAMOND_AXE
+    description: "Топор против щита: ломай блок и дожимай"
+    helmet: "DIAMOND_HELMET#protection=3"
+    chestplate: "DIAMOND_CHESTPLATE#protection=3"
+    leggings: "DIAMOND_LEGGINGS#protection=3"
+    boots: "DIAMOND_BOOTS#protection=3"
+    offhand: "SHIELD"
+    items: ["DIAMOND_AXE#sharpness=4", "DIAMOND_SWORD#sharpness=4", "CROSSBOW#quick_charge=1", "ARROW:16", "BOW#power=1", "COOKED_BEEF:16"]
+  pot:
+    name: "&dPot"
+    icon: SPLASH_POTION
+    description: "Отхил зельями: кто лучше кидает — тот живёт"
+    helmet: "DIAMOND_HELMET#protection=3,unbreaking=3"
+    chestplate: "DIAMOND_CHESTPLATE#protection=3,unbreaking=3"
+    leggings: "DIAMOND_LEGGINGS#protection=3,unbreaking=3"
+    boots: "DIAMOND_BOOTS#protection=3,unbreaking=3"
+    items: ["DIAMOND_SWORD#sharpness=4,fire_aspect=1", "POTION@long_swiftness*2", "POTION@strong_strength", "COOKED_BEEF:32", "SPLASH_POTION@strong_healing*30"]
+  nethop:
+    name: "&4NethOP"
+    icon: NETHERITE_CHESTPLATE
+    description: "Незерит на максималках, зелья и гэппы"
+    helmet: "NETHERITE_HELMET#protection=4,unbreaking=3"
+    chestplate: "NETHERITE_CHESTPLATE#protection=4,unbreaking=3"
+    leggings: "NETHERITE_LEGGINGS#protection=4,unbreaking=3"
+    boots: "NETHERITE_BOOTS#protection=4,unbreaking=3,feather_falling=4"
+    offhand: "GOLDEN_APPLE:64"
+    items: ["NETHERITE_SWORD#sharpness=5,fire_aspect=2", "NETHERITE_AXE#sharpness=5", "ENDER_PEARL:16", "POTION@strong_strength*2", "POTION@strong_swiftness*2",
+      "POTION@long_fire_resistance", "COOKED_BEEF:64", "SPLASH_POTION@strong_healing*20"]
+  smp:
+    name: "&aSMP"
+    icon: SHIELD
+    description: "Как на сервере: тотемы, щит, паутина, жемчуг"
+    build: true
+    helmet: "NETHERITE_HELMET#protection=4,unbreaking=3"
+    chestplate: "NETHERITE_CHESTPLATE#protection=4,unbreaking=3"
+    leggings: "NETHERITE_LEGGINGS#blast_protection=4,unbreaking=3"
+    boots: "NETHERITE_BOOTS#protection=4,unbreaking=3,feather_falling=4"
+    offhand: "TOTEM_OF_UNDYING"
+    items: ["NETHERITE_SWORD#sharpness=5", "NETHERITE_AXE#sharpness=5", "SHIELD#unbreaking=3", "ENDER_PEARL:16", "GOLDEN_APPLE:32",
+      "CROSSBOW#quick_charge=3,piercing=4", "ARROW:32", "COBWEB:16", "WATER_BUCKET", "OAK_PLANKS:64", "POTION@strong_strength*2",
+      "POTION@strong_swiftness*2", "TOTEM_OF_UNDYING*3", "COOKED_BEEF:64"]
+  uhc:
+    name: "&cUHC"
+    icon: LAVA_BUCKET
+    description: "Без регена: блоки, лава, вода, гэппы"
+    build: true
+    helmet: "DIAMOND_HELMET#protection=2"
+    chestplate: "DIAMOND_CHESTPLATE#protection=2"
+    leggings: "DIAMOND_LEGGINGS#protection=2"
+    boots: "DIAMOND_BOOTS#protection=2"
+    offhand: "SHIELD"
+    items: ["DIAMOND_SWORD#sharpness=4", "DIAMOND_AXE#sharpness=1", "BOW#power=1", "CROSSBOW", "ARROW:16", "GOLDEN_APPLE:6",
+      "LAVA_BUCKET", "LAVA_BUCKET", "WATER_BUCKET", "WATER_BUCKET", "COBBLESTONE:64", "COBBLESTONE:64", "OAK_PLANKS:64",
+      "COBWEB:8", "DIAMOND_PICKAXE#efficiency=3", "COOKED_BEEF:16"]
+  crystal:
+    name: "&5Crystal"
+    icon: END_CRYSTAL
+    description: "Кристаллы, якоря и тотемы — классика CPvP"
+    build: true
+    helmet: "NETHERITE_HELMET#protection=4,unbreaking=3"
+    chestplate: "NETHERITE_CHESTPLATE#protection=4,unbreaking=3"
+    leggings: "NETHERITE_LEGGINGS#blast_protection=4,unbreaking=3"
+    boots: "NETHERITE_BOOTS#protection=4,unbreaking=3,feather_falling=4"
+    offhand: "TOTEM_OF_UNDYING"
+    items: ["NETHERITE_SWORD#sharpness=5", "END_CRYSTAL:64", "OBSIDIAN:64", "OBSIDIAN:64", "RESPAWN_ANCHOR:32", "GLOWSTONE:64",
+      "ENDER_PEARL:16", "GOLDEN_APPLE:64", "NETHERITE_PICKAXE#efficiency=5", "TOTEM_OF_UNDYING*6", "POTION@strong_strength",
+      "POTION@strong_swiftness", "EXPERIENCE_BOTTLE:64", "COOKED_BEEF:64"]
+  mace:
+    name: "&bMace"
+    icon: MACE
+    description: "Булава и заряды ветра: взлетай и падай сверху"
+    helmet: "DIAMOND_HELMET#protection=4,unbreaking=3"
+    chestplate: "DIAMOND_CHESTPLATE#protection=4,unbreaking=3"
+    leggings: "DIAMOND_LEGGINGS#protection=4,unbreaking=3"
+    boots: "DIAMOND_BOOTS#protection=4,unbreaking=3,feather_falling=4"
+    offhand: "SHIELD"
+    items: ["MACE#density=5,wind_burst=1", "DIAMOND_SWORD#sharpness=5", "DIAMOND_AXE#sharpness=5", "WIND_CHARGE:64", "ENDER_PEARL:16",
+      "GOLDEN_APPLE:16", "COOKED_BEEF:32"]

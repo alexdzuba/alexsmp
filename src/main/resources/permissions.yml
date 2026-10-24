@@ -1,0 +1,65 @@
+# ============================================================
+#  Служебные роли и права (собственная система плагина).
+#  Назначение роли: из консоли «usmp role <ник> <роль>» или в панели владельца.
+#  Права: точные узлы, «узел.*» — вся ветка, «*» — всё, «-узел» — запрет.
+#  Ранги прогрессии игроков НЕ связаны с этими ролями и не дают прав.
+# ============================================================
+roles:
+  player:
+    display: "&7Игрок"
+    weight: 0
+    permissions:
+      - "usmp.player.*"
+  helper:
+    display: "&aПомощник"
+    weight: 30
+    inherits: [player]
+    permissions:
+      - "usmp.mod.base"
+      - "usmp.mod.reports"
+      - "usmp.mod.mute"
+      - "usmp.mod.warn"
+      - "usmp.mod.history"
+      - "usmp.mod.alerts"
+  moderator:
+    display: "&9Модератор"
+    weight: 50
+    inherits: [helper]
+    permissions:
+      - "usmp.mod.*"
+  admin:
+    display: "&cАдминистратор"
+    weight: 80
+    inherits: [moderator]
+    permissions:
+      - "usmp.admin.*"
+      - "-usmp.admin.troll"
+      - "-usmp.admin.troll.extreme"
+  owner:
+    display: "&4Владелец"
+    weight: 100
+    permissions:
+      - "*"
+
+moderation:
+  # Готовые причины в меню наказаний.
+  reasons:
+    - "Читы"
+    - "Дюп / использование багов"
+    - "Оскорбления"
+    - "Спам / флуд"
+    - "Мошенничество"
+    - "Реклама"
+  # Автоматическая эскалация по числу предупреждений: «ТИП срок». Удалите строки, чтобы отключить.
+  warn-escalation:
+    "3": "MUTE 1h"
+    "5": "BAN 1d"
+
+reports:
+  reasons:
+    - "Читы"
+    - "Дюп / баг"
+    - "Оскорбления"
+    - "Спам"
+    - "Мошенничество при сделке"
+    - "Другое"

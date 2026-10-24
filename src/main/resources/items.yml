@@ -1,0 +1,210 @@
+# ============================================================
+#  Уникальные предметы, улучшенные зелья и таблицы добычи
+#  Подлинность определяется скрытым UID и подписью, а не названием.
+# ============================================================
+
+rarities:
+  common: {name: "&fОбычный", color: "&f"}
+  uncommon: {name: "&aНеобычный", color: "&a"}
+  rare: {name: "&9Редкий", color: "&9"}
+  epic: {name: "&5Эпический", color: "&5"}
+  legendary: {name: "&6Легендарный", color: "&6"}
+
+# Атрибуты — бонус сверх ванильных значений предмета (attack_damage, attack_speed, armor, armor_toughness,
+# movement_speed, max_health, knockback_resistance, luck).
+# Пассивы: HOLD (пока в руке/надето), ON_HIT (шанс при ударе, наложить на цель), ON_KILL (себе при убийстве).
+# limit: 0 — без ограничения, N — не больше N экземпляров в мире одновременно.
+items:
+  ember_blade:
+    material: IRON_SWORD
+    name: "Клинок Тлеющих Углей"
+    rarity: rare
+    lore: ["&7Сталь хранит жар метеорита."]
+    attributes: {attack_damage: 1.0}
+    passives:
+      - {type: ON_HIT, effect: SLOWNESS, amplifier: 0, duration: 30, chance: 0.12, cooldown: 10}
+  wanderer_boots:
+    material: LEATHER_BOOTS
+    name: "Сапоги Странника"
+    rarity: uncommon
+    lore: ["&7Дороги сами ложатся под ноги."]
+    attributes: {movement_speed: 0.005, armor: 1.0}
+  miner_pick:
+    material: IRON_PICKAXE
+    name: "Кирка Глубинного Рудокопа"
+    rarity: rare
+    lore: ["&7Видит в темноте лучше хозяина."]
+    passives:
+      - {type: HOLD, effect: NIGHT_VISION, amplifier: 0}
+  warden_plate:
+    material: IRON_CHESTPLATE
+    name: "Нагрудник Стража Тайника"
+    rarity: epic
+    lore: ["&7Снят с последнего стража."]
+    attributes: {armor: 1.0, armor_toughness: 1.0, knockback_resistance: 0.05}
+  fang_of_the_rift:
+    material: DIAMOND_SWORD
+    name: "Клык Разлома"
+    rarity: epic
+    lore: ["&7Выкован из осколков аномалии."]
+    attributes: {attack_damage: 1.0}
+    passives:
+      - {type: ON_KILL, effect: REGENERATION, amplifier: 0, duration: 60, cooldown: 30}
+  seers_helm:
+    material: GOLDEN_HELMET
+    name: "Шлем Провидца"
+    rarity: rare
+    lore: ["&7Под водой дышится легче."]
+    attributes: {armor: 1.0}
+    passives:
+      - {type: HOLD, effect: WATER_BREATHING, amplifier: 0}
+  phantom_bow:
+    material: BOW
+    name: "Лук Безмолвного Охотника"
+    rarity: epic
+    lore: ["&7Стрелы летят без звука."]
+    passives:
+      - {type: ON_HIT, effect: GLOWING, amplifier: 0, duration: 60, chance: 0.25, cooldown: 15}
+  unknown_crown:
+    material: NETHERITE_HELMET
+    name: "Корона Неизвестного"
+    rarity: legendary
+    lore: ["&7Никто не помнит, кто носил её первым."]
+    limit: 1
+    attributes: {armor: 1.0, max_health: 2.0}
+    passives:
+      - {type: HOLD, effect: FIRE_RESISTANCE, amplifier: 0}
+  # --- Сюжетные артефакты открытия Незера (можно продавать) ---
+  nether_fragment_1:
+    material: ECHO_SHARD
+    name: "Осколок Незера I — Пепел"
+    rarity: legendary
+    story: true
+    limit: 1
+    lore: ["&7Первый из пяти осколков печати.", "&8Соберите все пять: /dimensions"]
+  nether_fragment_2:
+    material: ECHO_SHARD
+    name: "Осколок Незера II — Сера"
+    rarity: legendary
+    story: true
+    limit: 1
+    lore: ["&7Второй из пяти осколков печати.", "&8Соберите все пять: /dimensions"]
+  nether_fragment_3:
+    material: ECHO_SHARD
+    name: "Осколок Незера III — Кровь"
+    rarity: legendary
+    story: true
+    limit: 1
+    lore: ["&7Третий из пяти осколков печати.", "&8Соберите все пять: /dimensions"]
+  nether_fragment_4:
+    material: ECHO_SHARD
+    name: "Осколок Незера IV — Пламя"
+    rarity: legendary
+    story: true
+    limit: 1
+    lore: ["&7Четвёртый из пяти осколков печати.", "&8Соберите все пять: /dimensions"]
+  nether_fragment_5:
+    material: ECHO_SHARD
+    name: "Осколок Незера V — Тьма"
+    rarity: legendary
+    story: true
+    limit: 1
+    lore: ["&7Последний осколок печати.", "&8Соберите все пять: /dimensions"]
+  nether_key:
+    material: NETHER_STAR
+    name: "Ключ Незера"
+    rarity: legendary
+    story: true
+    limit: 1
+    lore: ["&7Пять осколков слились в одно пламя.", "&eПКМ в основном мире (дальше 300 блоков от спавна)", "&eначинает ритуал открытия Незера."]
+
+# Улучшенные версии ванильных зелий. duration — в тиках (20 тиков = 1 сек).
+potions:
+  strength_plus:
+    name: "Зелье Ярости"
+    rarity: epic
+    color: "#AA1111"
+    effects: [{effect: STRENGTH, amplifier: 0, duration: 4800}]
+  speed_plus:
+    name: "Зелье Ветра"
+    rarity: rare
+    color: "#55CCFF"
+    effects: [{effect: SPEED, amplifier: 1, duration: 3600}]
+  regen_plus:
+    name: "Зелье Второго Дыхания"
+    rarity: epic
+    color: "#FF55AA"
+    effects: [{effect: REGENERATION, amplifier: 1, duration: 900}]
+  guardian:
+    name: "Зелье Стража"
+    rarity: epic
+    color: "#777777"
+    effects: [{effect: RESISTANCE, amplifier: 0, duration: 1800}, {effect: ABSORPTION, amplifier: 0, duration: 1800}]
+  night_vision_plus:
+    name: "Зелье Совы"
+    rarity: uncommon
+    color: "#2222AA"
+    effects: [{effect: NIGHT_VISION, amplifier: 0, duration: 24000}]
+  fire_plus:
+    name: "Зелье Саламандры"
+    rarity: rare
+    color: "#FF8800"
+    effects: [{effect: FIRE_RESISTANCE, amplifier: 0, duration: 19200}]
+  explorer:
+    name: "Эликсир Первопроходца"
+    rarity: rare
+    color: "#33AA33"
+    effects: [{effect: SPEED, amplifier: 0, duration: 6000}, {effect: HASTE, amplifier: 0, duration: 6000}]
+
+# Таблицы добычи: item — "unique:id", "potion:id[:кол-во]" или "MATERIAL:кол-во"; money — деньги; weight — вес.
+loot-tables:
+  event_rare:
+    - {item: "unique:ember_blade", weight: 6}
+    - {item: "unique:warden_plate", weight: 3}
+    - {item: "unique:fang_of_the_rift", weight: 2}
+    - {item: "unique:phantom_bow", weight: 2}
+    - {item: "unique:unknown_crown", weight: 1}
+    - {item: "potion:strength_plus:2", weight: 8}
+    - {item: "potion:guardian:2", weight: 8}
+    - {item: "TOTEM_OF_UNDYING:1", weight: 3}
+    - {item: "DIAMOND:8", weight: 10}
+    - {money: 15000, weight: 10}
+  event_common:
+    - {item: "potion:speed_plus", weight: 10}
+    - {item: "potion:regen_plus", weight: 6}
+    - {item: "potion:night_vision_plus", weight: 10}
+    - {item: "unique:wanderer_boots", weight: 3}
+    - {item: "unique:miner_pick", weight: 2}
+    - {item: "DIAMOND:2", weight: 10}
+    - {item: "GOLDEN_APPLE:2", weight: 8}
+    - {item: "EXPERIENCE_BOTTLE:16", weight: 10}
+    - {money: 2500, weight: 15}
+  enhanced_mob:
+    - {item: "potion:night_vision_plus", weight: 10}
+    - {item: "potion:fire_plus", weight: 6}
+    - {item: "EMERALD:3", weight: 20}
+    - {item: "DIAMOND:1", weight: 10}
+    - {item: "unique:wanderer_boots", weight: 1}
+    - {money: 500, weight: 20}
+  exploration:
+    - {item: "potion:explorer", weight: 10}
+    - {item: "potion:night_vision_plus", weight: 10}
+    - {item: "unique:wanderer_boots", weight: 3}
+    - {item: "unique:seers_helm", weight: 2}
+    - {item: "unique:miner_pick", weight: 2}
+    - {item: "EMERALD:5", weight: 15}
+  exploration_far:
+    - {item: "potion:guardian", weight: 8}
+    - {item: "potion:strength_plus", weight: 6}
+    - {item: "unique:seers_helm", weight: 4}
+    - {item: "unique:ember_blade", weight: 3}
+    - {item: "unique:phantom_bow", weight: 2}
+    - {item: "TOTEM_OF_UNDYING:1", weight: 2}
+    - {item: "DIAMOND:4", weight: 10}
+
+exploration:
+  # Шанс особой находки в сундуках структур (генерируются один раз — находки не возрождаются).
+  base-chance: 0.06
+  chance-per-1000-blocks: 0.02
+  max-chance: 0.25
+  far-distance: 6000

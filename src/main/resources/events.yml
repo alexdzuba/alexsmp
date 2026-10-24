@@ -1,0 +1,108 @@
+# ============================================================
+#  События сервера и открытие измерений
+# ============================================================
+
+# Сколько событий в сутки (в случайное время в активные часы).
+per-day: 4
+active-hours: {from: "10:00", to: "23:30"}
+# За сколько минут до начала — атмосферное предупреждение (без координат).
+warning-minutes: 5
+# Неудавшееся событие повторяется через N минут.
+retry-minutes: 60
+# Минимум активных (не AFK) игроков для запуска события по расписанию.
+min-players: 2
+# Игрок считается AFK, если не проявлял активности N секунд.
+afk-seconds: 120
+# После N однотипных действий их ценность для вклада постепенно уменьшается (защита от накрутки).
+diminishing-after: 30
+reputation-per-event: 15
+# Шанс обычной награды для участников (кроме лучшего, который получает редкую награду и осколок Незера).
+common-loot-chance: 0.5
+
+distance: {min: 400, max: 6000}
+
+types:
+  meteor:
+    enabled: true
+    weight: 3
+    minutes: 20
+    success-fraction: 0.5
+    min-contribution: 3
+    money-pool: 6000
+  cache:
+    enabled: true
+    weight: 3
+    minutes: 15
+    guards: 6
+    min-contribution: 3
+    money-pool: 5000
+    chest-items: ["DIAMOND:2", "GOLDEN_APPLE:2", "EMERALD:6", "EXPERIENCE_BOTTLE:8", "potion:speed_plus", "potion:night_vision_plus", "IRON_INGOT:12"]
+  anomaly:
+    enabled: true
+    weight: 2
+    minutes: 10
+    max-mobs: 10
+    success-kills: 15
+    min-contribution: 4
+    money-pool: 6000
+  merchant:
+    enabled: true
+    weight: 2
+    minutes: 20
+    min-contribution: 1
+    money-pool: 2000
+  secrets:
+    enabled: true
+    weight: 2
+    minutes: 25
+    min-contribution: 2
+    money-pool: 6000
+  ritual:
+    minutes: 10
+    min-contribution: 3
+    money-pool: 50000
+
+riddles:
+  - "Где тени длиннее дня и камень помнит огонь — там спрятано то, что ищут многие."
+  - "Под небом, где птицы не поют, а ветер говорит с камнями."
+  - "Там, где вода встречает землю, страж хранит чужую тайну."
+  - "Иди туда, где солнце садится раньше, чем ты успеешь испугаться."
+
+merchant:
+  trades:
+    strength: {item: "potion:strength_plus", price: 6000, stock: 3}
+    guardian: {item: "potion:guardian", price: 7000, stock: 3}
+    explorer: {item: "potion:explorer", price: 2500, stock: 5}
+    totem: {item: "TOTEM_OF_UNDYING:1", price: 150000, stock: 1}
+    boots: {item: "unique:wanderer_boots", price: 20000, stock: 2}
+    helm: {item: "unique:seers_helm", price: 35000, stock: 1}
+
+nether:
+  # Шанс выдачи следующего осколка Незера лучшему участнику успешного события (пока Незер закрыт).
+  fragment-chance: 1.0
+  # Минимальное расстояние от спавна для ритуала.
+  ritual-min-distance: 300
+
+end:
+  # Энд открывается, когда ОДНОВРЕМЕННО: прошло N дней после открытия Незера И выполнено коллективное задание.
+  days-after-nether: 7
+  # Коллективное задание сервера: сколько предметов должны внести все игроки вместе (/dimensions).
+  collective-goal:
+    ENDER_PEARL: 512
+    BLAZE_ROD: 256
+    OBSIDIAN: 512
+    DIAMOND: 128
+  # Денежный фонд, распределяемый между участниками пропорционально вкладу при открытии Энда.
+  reward-pool: 500000
+
+# Мини-события: короткие глобальные эффекты (переворот мира, звездопад и т.п.).
+mini:
+  enabled: true
+  every-minutes: 25
+  min-players: 1
+
+# Удача/невезение (/luck <игрок> <-3..3>). Невезение не убивает — только дроп, чары и мелкие неприятности.
+luck:
+  # true — невезение действует только после N часов, проведённых игроком в игре.
+  require-playtime: false
+  min-playtime-hours: 3

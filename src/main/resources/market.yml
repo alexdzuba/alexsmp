@@ -1,0 +1,360 @@
+# ============================================================
+#  Рынок ALEX SMP 2.0
+#  Цены задаются только «сырью» (values). Цена любого скрафченного или переплавленного предмета
+#  считается автоматически по рецептам игры: сумма ингредиентов, без надбавки.
+#  Поэтому крафт и автокрафтеры НЕ создают прибыль — заработать «из воздуха» нельзя.
+#  Магазин продаёт дороже стоимости, скупка платит дешевле — перепродажа всегда в убыток.
+# ============================================================
+
+# Версия файла. Если в новой версии плагина число больше, старый файл сохраняется как market.yml.old-v… и заменяется.
+config-version: 6
+
+pricing:
+  # Цена в магазине = стоимость × buy-markup
+  buy-markup: 1.8
+  # Цена скупки = стоимость × sell-fraction
+  sell-fraction: 0.45
+  # Все цены из values и fixed-values умножаются на этот коэффициент (10 = цены в 10 раз выше).
+  value-scale: 10
+  # Минимальная цена скупки одной штуки сырья (до падения цены от объёма продаж).
+  min-sell-price: 10
+  # Надбавка скупки за каждый уровень зачарования (на предмете или в книге)
+  enchant-bonus-per-level: 30
+
+sell:
+  # Сколько всего игрок может заработать скупкой за сутки (по часовому поясу из config.yml).
+  daily-limit-per-player: 20000000
+  # С одного вида предмета за сутки по полной цене; дальше этот вид скупается дешевле.
+  item-soft-cap: 4000000
+  # Доля цены после мягкого лимита (0.35 = 35%).
+  over-cap-fraction: 0.35
+  # Падение цены при большой продаже одного вида предмета за сутки: после half-items проданных штук цена вдвое ниже
+  # (плавно, 1/(1+n/half)), но не ниже floor от начальной цены.
+  volume-decay: {half-items: 256, floor: 0.2}
+  # Цена уникальных предметов плагина по редкости (улучшенные зелья — 1/10). Сюжетные артефакты не скупаются.
+  unique-rarity-prices: {common: 1000, uncommon: 10000, rare: 40000, epic: 120000, legendary: 350000}
+  # Никогда не скупается.
+  blacklist: [BEDROCK, BARRIER, COMMAND_BLOCK, CHAIN_COMMAND_BLOCK, REPEATING_COMMAND_BLOCK, COMMAND_BLOCK_MINECART,
+    STRUCTURE_BLOCK, STRUCTURE_VOID, JIGSAW, LIGHT, DEBUG_STICK, KNOWLEDGE_BOOK, SPAWNER, TRIAL_SPAWNER, VAULT,
+    DRAGON_EGG, END_PORTAL_FRAME, REINFORCED_DEEPSLATE, PETRIFIED_OAK_SLAB, TEST_BLOCK, TEST_INSTANCE_BLOCK]
+
+shop:
+  # Что НЕ продаётся в магазине: premium (алмазы, незерит, элитры и всё, что из них), а также всё из Незера и Энда —
+  # это добывают сами. Удалите метку из списка, чтобы открыть такие товары в магазине.
+  buyable-tags-blocked: [premium, nether, end]
+  # Отдельные предметы, которых нет в магазине.
+  blacklist: [TOTEM_OF_UNDYING, ENCHANTED_GOLDEN_APPLE, GOLDEN_APPLE, ENDER_PEARL, ENDER_EYE, EXPERIENCE_BOTTLE,
+    TNT, TNT_MINECART, END_CRYSTAL, RESPAWN_ANCHOR, SPONGE, WET_SPONGE, HEART_OF_THE_SEA, CONDUIT, TRIDENT,
+    NAUTILUS_SHELL, ECHO_SHARD, RECOVERY_COMPASS, SNIFFER_EGG, TRIAL_KEY, OMINOUS_TRIAL_KEY, HEAVY_CORE, MACE,
+    BREEZE_ROD, WIND_CHARGE, ENCHANTED_BOOK, SADDLE, NAME_TAG, ELYTRA, BEACON, OBSIDIAN, CRYING_OBSIDIAN]
+
+mail:
+  capacity: 10
+
+auction:
+  max-lots-per-player: 10
+  max-price: 1000000000000
+
+orders:
+  max-per-player: 10
+
+# Метки распространяются на всё, что крафтится из этих предметов (по самому дешёвому рецепту).
+tags:
+  nether: [NETHERRACK, NETHER_QUARTZ_ORE, QUARTZ, GLOWSTONE_DUST, SOUL_SAND, SOUL_SOIL, NETHER_WART, BLAZE_ROD,
+    GHAST_TEAR, MAGMA_CREAM, BLACKSTONE, BASALT, CRIMSON_STEM, WARPED_STEM, CRIMSON_FUNGUS, WARPED_FUNGUS,
+    NETHER_WART_BLOCK, WARPED_WART_BLOCK, SHROOMLIGHT, WEEPING_VINES, TWISTING_VINES, ANCIENT_DEBRIS,
+    NETHER_GOLD_ORE, GILDED_BLACKSTONE, WITHER_SKELETON_SKULL, NETHER_STAR, NETHERITE_UPGRADE_SMITHING_TEMPLATE,
+    PIGLIN_HEAD, RIB_ARMOR_TRIM_SMITHING_TEMPLATE, SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE, MUSIC_DISC_PIGSTEP]
+  end: [END_STONE, CHORUS_FRUIT, CHORUS_FLOWER, SHULKER_SHELL, ELYTRA, DRAGON_HEAD, DRAGON_BREATH, PURPUR_BLOCK,
+    SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE]
+  premium: [DIAMOND, DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE, EMERALD, EMERALD_ORE, DEEPSLATE_EMERALD_ORE, ANCIENT_DEBRIS,
+    NETHERITE_SCRAP, ELYTRA, TOTEM_OF_UNDYING, NETHER_STAR, HEART_OF_THE_SEA, ECHO_SHARD, HEAVY_CORE, BREEZE_ROD,
+    TRIDENT, SHULKER_SHELL, ENCHANTED_GOLDEN_APPLE, DRAGON_HEAD]
+
+# Стоимость сырья (монеты за 1 шт.). Магазин ×1.8, скупка ×0.45 от этих чисел.
+values:
+  # --- Камень и земля ---
+  COBBLESTONE: 0.5
+  COBBLED_DEEPSLATE: 0.6
+  DIRT: 0.3
+  COARSE_DIRT: 0.4
+  ROOTED_DIRT: 0.4
+  GRASS_BLOCK: 0.8
+  PODZOL: 0.8
+  MYCELIUM: 1.2
+  SAND: 0.5
+  RED_SAND: 0.6
+  GRAVEL: 0.5
+  CLAY_BALL: 1
+  ANDESITE: 0.5
+  DIORITE: 0.5
+  GRANITE: 0.5
+  TUFF: 0.6
+  CALCITE: 0.8
+  DRIPSTONE_BLOCK: 0.8
+  POINTED_DRIPSTONE: 0.6
+  MOSS_BLOCK: 0.8
+  MUD: 0.5
+  SNOWBALL: 0.1
+  ICE: 1
+  SNOW_BLOCK: 0.4
+  OBSIDIAN: 4
+  CRYING_OBSIDIAN: 6
+  AMETHYST_SHARD: 1.2
+  SCULK: 1
+  SCULK_CATALYST: 25
+  SCULK_SENSOR: 15
+  SCULK_SHRIEKER: 20
+  MAGMA_BLOCK: 3
+  BONE_BLOCK: 3
+  # --- Руды и минералы ---
+  COAL: 3
+  COAL_ORE: 3.5
+  DEEPSLATE_COAL_ORE: 3.5
+  RAW_IRON: 5
+  IRON_ORE: 5.5
+  DEEPSLATE_IRON_ORE: 5.5
+  RAW_COPPER: 1.5
+  COPPER_ORE: 2
+  DEEPSLATE_COPPER_ORE: 2
+  RAW_GOLD: 7
+  GOLD_ORE: 7.5
+  DEEPSLATE_GOLD_ORE: 7.5
+  REDSTONE: 1.5
+  REDSTONE_ORE: 6
+  DEEPSLATE_REDSTONE_ORE: 6
+  LAPIS_LAZULI: 2.5
+  LAPIS_ORE: 10
+  DEEPSLATE_LAPIS_ORE: 10
+  DIAMOND: 90
+  DIAMOND_ORE: 95
+  DEEPSLATE_DIAMOND_ORE: 95
+  EMERALD: 25
+  EMERALD_ORE: 30
+  DEEPSLATE_EMERALD_ORE: 30
+  FLINT: 0.8
+  # --- Незер ---
+  NETHERRACK: 0.2
+  NETHER_QUARTZ_ORE: 3
+  QUARTZ: 2.5
+  NETHER_GOLD_ORE: 4
+  GLOWSTONE_DUST: 1.5
+  SOUL_SAND: 0.8
+  SOUL_SOIL: 0.8
+  BLACKSTONE: 0.6
+  BASALT: 0.6
+  GILDED_BLACKSTONE: 8
+  MAGMA_CREAM: 4
+  NETHER_WART: 1.5
+  BLAZE_ROD: 8
+  GHAST_TEAR: 25
+  CRIMSON_STEM: 3
+  WARPED_STEM: 3
+  CRIMSON_FUNGUS: 1
+  WARPED_FUNGUS: 1
+  NETHER_WART_BLOCK: 2
+  WARPED_WART_BLOCK: 2
+  SHROOMLIGHT: 4
+  WEEPING_VINES: 0.5
+  TWISTING_VINES: 0.5
+  ANCIENT_DEBRIS: 650
+  WITHER_SKELETON_SKULL: 1500
+  NETHER_STAR: 30000
+  NETHERITE_UPGRADE_SMITHING_TEMPLATE: 2500
+  PIGLIN_HEAD: 300
+  # --- Энд ---
+  END_STONE: 0.5
+  CHORUS_FRUIT: 1
+  CHORUS_FLOWER: 5
+  SHULKER_SHELL: 350
+  ELYTRA: 120000
+  DRAGON_HEAD: 15000
+  DRAGON_BREATH: 30
+  # --- Дерево ---
+  OAK_LOG: 3
+  SPRUCE_LOG: 3
+  BIRCH_LOG: 3
+  JUNGLE_LOG: 3
+  ACACIA_LOG: 3
+  DARK_OAK_LOG: 3
+  MANGROVE_LOG: 3
+  CHERRY_LOG: 3.5
+  PALE_OAK_LOG: 4
+  BAMBOO: 0.3
+  MANGROVE_ROOTS: 1
+  OAK_SAPLING: 0.5
+  SPRUCE_SAPLING: 0.5
+  BIRCH_SAPLING: 0.5
+  JUNGLE_SAPLING: 0.6
+  ACACIA_SAPLING: 0.5
+  DARK_OAK_SAPLING: 0.6
+  CHERRY_SAPLING: 1
+  PALE_OAK_SAPLING: 1
+  MANGROVE_PROPAGULE: 0.6
+  AZALEA: 1
+  FLOWERING_AZALEA: 1.5
+  OAK_LEAVES: 0.2
+  SPRUCE_LEAVES: 0.2
+  BIRCH_LEAVES: 0.2
+  JUNGLE_LEAVES: 0.2
+  ACACIA_LEAVES: 0.2
+  DARK_OAK_LEAVES: 0.2
+  MANGROVE_LEAVES: 0.2
+  CHERRY_LEAVES: 0.3
+  PALE_OAK_LEAVES: 0.3
+  AZALEA_LEAVES: 0.3
+  FLOWERING_AZALEA_LEAVES: 0.4
+  # --- Растения и урожай ---
+  WHEAT: 1
+  WHEAT_SEEDS: 0.15
+  CARROT: 0.7
+  POTATO: 0.7
+  POISONOUS_POTATO: 0.3
+  BEETROOT: 0.7
+  BEETROOT_SEEDS: 0.15
+  MELON_SLICE: 0.3
+  MELON_SEEDS: 0.2
+  PUMPKIN: 2
+  PUMPKIN_SEEDS: 0.2
+  SUGAR_CANE: 0.8
+  CACTUS: 0.7
+  KELP: 0.3
+  DRIED_KELP: 0.4
+  SEAGRASS: 0.2
+  SEA_PICKLE: 1
+  COCOA_BEANS: 0.8
+  SWEET_BERRIES: 0.5
+  GLOW_BERRIES: 0.8
+  APPLE: 2
+  BROWN_MUSHROOM: 0.8
+  RED_MUSHROOM: 0.8
+  BROWN_MUSHROOM_BLOCK: 0.8
+  RED_MUSHROOM_BLOCK: 0.8
+  MUSHROOM_STEM: 0.8
+  VINE: 0.3
+  LILY_PAD: 1
+  GLOW_LICHEN: 0.5
+  HANGING_ROOTS: 0.3
+  SPORE_BLOSSOM: 5
+  BIG_DRIPLEAF: 2
+  SMALL_DRIPLEAF: 1
+  PINK_PETALS: 0.4
+  TORCHFLOWER_SEEDS: 3
+  PITCHER_POD: 3
+  SHORT_GRASS: 0.1
+  TALL_GRASS: 0.2
+  FERN: 0.1
+  LARGE_FERN: 0.2
+  DEAD_BUSH: 0.2
+  DANDELION: 0.5
+  POPPY: 0.5
+  BLUE_ORCHID: 0.8
+  ALLIUM: 0.8
+  AZURE_BLUET: 0.6
+  RED_TULIP: 0.6
+  ORANGE_TULIP: 0.6
+  WHITE_TULIP: 0.6
+  PINK_TULIP: 0.6
+  OXEYE_DAISY: 0.6
+  CORNFLOWER: 0.6
+  LILY_OF_THE_VALLEY: 0.8
+  WITHER_ROSE: 25
+  SUNFLOWER: 1
+  LILAC: 1
+  ROSE_BUSH: 1
+  PEONY: 1
+  TORCHFLOWER: 3
+  PITCHER_PLANT: 3
+  # --- Мобы ---
+  ROTTEN_FLESH: 0.2
+  BONE: 0.8
+  STRING: 0.8
+  SPIDER_EYE: 1.2
+  GUNPOWDER: 2
+  SLIME_BALL: 2.5
+  FEATHER: 0.4
+  LEATHER: 1.8
+  RABBIT_HIDE: 0.8
+  RABBIT_FOOT: 6
+  EGG: 0.4
+  INK_SAC: 0.8
+  GLOW_INK_SAC: 2.5
+  PRISMARINE_SHARD: 1.5
+  PRISMARINE_CRYSTALS: 2.5
+  PHANTOM_MEMBRANE: 6
+  ENDER_PEARL: 8
+  ARMADILLO_SCUTE: 4
+  TURTLE_SCUTE: 10
+  HONEYCOMB: 1.5
+  HONEY_BOTTLE: 3
+  WHITE_WOOL: 1.2
+  BEEF: 1.2
+  PORKCHOP: 1.2
+  CHICKEN: 1
+  MUTTON: 1
+  RABBIT: 1
+  COD: 1
+  SALMON: 1.2
+  TROPICAL_FISH: 1.5
+  PUFFERFISH: 1.5
+  NAUTILUS_SHELL: 40
+  HEART_OF_THE_SEA: 1500
+  TRIDENT: 2000
+  TOTEM_OF_UNDYING: 2500
+  ENCHANTED_GOLDEN_APPLE: 6000
+  ZOMBIE_HEAD: 150
+  SKELETON_SKULL: 150
+  CREEPER_HEAD: 200
+  # --- Сокровища и редкое ---
+  SADDLE: 60
+  NAME_TAG: 60
+  ENCHANTED_BOOK: 12
+  EXPERIENCE_BOTTLE: 3
+  BREEZE_ROD: 12
+  WIND_CHARGE: 3
+  HEAVY_CORE: 6000
+  TRIAL_KEY: 40
+  OMINOUS_TRIAL_KEY: 300
+  ECHO_SHARD: 250
+  DISC_FRAGMENT_5: 30
+  SNIFFER_EGG: 400
+  SPONGE: 150
+  WET_SPONGE: 150
+  BELL: 50
+  MUSIC_DISC_13: 80
+  MUSIC_DISC_CAT: 80
+  MUSIC_DISC_BLOCKS: 80
+  MUSIC_DISC_CHIRP: 80
+  MUSIC_DISC_FAR: 80
+  MUSIC_DISC_MALL: 80
+  MUSIC_DISC_MELLOHI: 80
+  MUSIC_DISC_STAL: 80
+  MUSIC_DISC_STRAD: 80
+  MUSIC_DISC_WARD: 80
+  MUSIC_DISC_11: 80
+  MUSIC_DISC_WAIT: 80
+  MUSIC_DISC_OTHERSIDE: 300
+  MUSIC_DISC_RELIC: 150
+  MUSIC_DISC_CREATOR: 300
+  MUSIC_DISC_PRECIPICE: 150
+  MUSIC_DISC_PIGSTEP: 250
+  GOAT_HORN: 30
+  # Шаблоны отделки брони (встречаются в структурах)
+  SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE: 80
+  DUNE_ARMOR_TRIM_SMITHING_TEMPLATE: 80
+  COAST_ARMOR_TRIM_SMITHING_TEMPLATE: 80
+  WILD_ARMOR_TRIM_SMITHING_TEMPLATE: 80
+  WARD_ARMOR_TRIM_SMITHING_TEMPLATE: 200
+  EYE_ARMOR_TRIM_SMITHING_TEMPLATE: 250
+  VEX_ARMOR_TRIM_SMITHING_TEMPLATE: 250
+  TIDE_ARMOR_TRIM_SMITHING_TEMPLATE: 150
+  RIB_ARMOR_TRIM_SMITHING_TEMPLATE: 150
+  SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE: 150
+  SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE: 250
+  SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE: 600
+  WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE: 120
+  SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE: 120
+  RAISER_ARMOR_TRIM_SMITHING_TEMPLATE: 120
+  HOST_ARMOR_TRIM_SMITHING_TEMPLATE: 120
+  FLOW_ARMOR_TRIM_SMITHING_TEMPLATE: 200
+  BOLT_ARMOR_TRIM_SMITHING_TEMPLATE: 200

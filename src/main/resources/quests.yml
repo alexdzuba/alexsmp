@@ -1,0 +1,254 @@
+# ============================================================
+#  Задания
+#  type: DAILY, WEEKLY (выдаются автоматически), STORY (один раз, через NPC), EXPLORE, COMBAT, EVENT, NPC.
+#  objective.kind: BREAK_BLOCK, PLACE_BLOCK, KILL_MOB, KILL_PLAYER (разные жертвы за сутки), FISH, CRAFT,
+#    SELL, EARN (target: sell|auction|pay|ANY), PLAYTIME (минуты), VISIT_BIOME (ключ биома), REACH_DISTANCE (блоков от спавна),
+#    OPEN_LOOT, DELIVER (сдать NPC), TALK (поговорить с NPC, target = id NPC), EVENT (тип события или ANY), DUEL_WIN.
+#  objective.target: материал/моб/биом через запятую или ANY.
+#  rewards: money, reputation, xp, items ["MATERIAL:n", "potion:id", "unique:id"], title.
+#  npc: id NPC, который выдаёт задание (иначе — доступно в меню /quests).
+# ============================================================
+daily-count: 3
+weekly-count: 2
+
+quests:
+  # ---------------- Ежедневные ----------------
+  d_miner:
+    type: DAILY
+    name: "Шахтёр"
+    description: "Добудьте 128 камня или глубинного сланца."
+    icon: STONE_PICKAXE
+    objective: {kind: BREAK_BLOCK, target: "STONE,DEEPSLATE,COBBLESTONE,COBBLED_DEEPSLATE", amount: 128}
+    rewards: {money: 600, reputation: 3, xp: 60}
+  d_lumber:
+    type: DAILY
+    name: "Лесоруб"
+    description: "Срубите 48 брёвен."
+    icon: IRON_AXE
+    objective: {kind: BREAK_BLOCK, target: "OAK_LOG,SPRUCE_LOG,BIRCH_LOG,JUNGLE_LOG,ACACIA_LOG,DARK_OAK_LOG,CHERRY_LOG,MANGROVE_LOG,PALE_OAK_LOG", amount: 48}
+    rewards: {money: 500, reputation: 3, xp: 50}
+  d_hunter:
+    type: DAILY
+    name: "Ночная стража"
+    description: "Победите 20 враждебных мобов (не из спавнеров)."
+    icon: IRON_SWORD
+    objective: {kind: KILL_MOB, target: "ZOMBIE,SKELETON,SPIDER,CREEPER,HUSK,STRAY,DROWNED,WITCH,ENDERMAN", amount: 20}
+    rewards: {money: 700, reputation: 4, xp: 70}
+  d_farmer:
+    type: DAILY
+    name: "Фермер"
+    description: "Соберите 64 пшеницы, моркови или картофеля."
+    icon: WHEAT
+    objective: {kind: BREAK_BLOCK, target: "WHEAT,CARROTS,POTATOES,BEETROOTS", amount: 64}
+    rewards: {money: 500, reputation: 3, xp: 50}
+  d_fisher:
+    type: DAILY
+    name: "Рыбак"
+    description: "Поймайте 10 предметов на удочку."
+    icon: FISHING_ROD
+    objective: {kind: FISH, target: ANY, amount: 10}
+    rewards: {money: 500, reputation: 3, xp: 50}
+  d_trader:
+    type: DAILY
+    name: "Торговец"
+    description: "Заработайте 2 000 продажей предметов серверу."
+    icon: EMERALD
+    objective: {kind: EARN, target: sell, amount: 2000}
+    rewards: {money: 400, reputation: 3, xp: 50}
+  d_builder:
+    type: DAILY
+    name: "Строитель"
+    description: "Поставьте 200 блоков."
+    icon: BRICKS
+    objective: {kind: PLACE_BLOCK, target: ANY, amount: 200}
+    rewards: {money: 500, reputation: 3, xp: 50}
+  d_ores:
+    type: DAILY
+    name: "Рудокоп"
+    description: "Добудьте 24 железной или золотой руды."
+    icon: RAW_IRON
+    objective: {kind: BREAK_BLOCK, target: "IRON_ORE,DEEPSLATE_IRON_ORE,GOLD_ORE,DEEPSLATE_GOLD_ORE", amount: 24}
+    rewards: {money: 900, reputation: 4, xp: 80}
+  d_online:
+    type: DAILY
+    name: "Житель мира"
+    description: "Проведите в игре 60 минут активно."
+    icon: CLOCK
+    objective: {kind: PLAYTIME, target: ANY, amount: 60}
+    rewards: {money: 500, reputation: 3, xp: 60}
+  d_crafter:
+    type: DAILY
+    name: "Мастер на все руки"
+    description: "Скрафтите 32 факела."
+    icon: TORCH
+    objective: {kind: CRAFT, target: TORCH, amount: 32}
+    rewards: {money: 300, reputation: 2, xp: 40}
+
+  # ---------------- Еженедельные ----------------
+  w_diamonds:
+    type: WEEKLY
+    name: "Блеск глубин"
+    description: "Добудьте 16 алмазной руды."
+    icon: DIAMOND
+    objective: {kind: BREAK_BLOCK, target: "DIAMOND_ORE,DEEPSLATE_DIAMOND_ORE", amount: 16}
+    rewards: {money: 6000, reputation: 20, xp: 400, items: ["potion:strength_plus"]}
+  w_events:
+    type: WEEKLY
+    name: "Свидетель чудес"
+    description: "Получите награду в 3 событиях сервера."
+    icon: NETHER_STAR
+    objective: {kind: EVENT, target: ANY, amount: 3}
+    rewards: {money: 8000, reputation: 30, xp: 500}
+  w_slayer:
+    type: WEEKLY
+    name: "Истребитель"
+    description: "Победите 200 враждебных мобов."
+    icon: DIAMOND_SWORD
+    objective: {kind: KILL_MOB, target: "ZOMBIE,SKELETON,SPIDER,CREEPER,HUSK,STRAY,DROWNED,WITCH,ENDERMAN,PILLAGER", amount: 200}
+    rewards: {money: 5000, reputation: 20, xp: 400}
+  w_merchant:
+    type: WEEKLY
+    name: "Купец"
+    description: "Заработайте 30 000 на рынке (скупка, аукцион)."
+    icon: GOLD_BLOCK
+    objective: {kind: EARN, target: ANY, amount: 30000}
+    rewards: {money: 4000, reputation: 20, xp: 300}
+  w_duelist:
+    type: WEEKLY
+    name: "Дуэлянт"
+    description: "Победите в 5 дуэлях."
+    icon: GOLDEN_SWORD
+    objective: {kind: DUEL_WIN, target: ANY, amount: 5}
+    rewards: {money: 5000, reputation: 15, xp: 300}
+  w_explorer:
+    type: WEEKLY
+    name: "Картограф"
+    description: "Откройте 10 сундуков в структурах мира."
+    icon: MAP
+    objective: {kind: OPEN_LOOT, target: ANY, amount: 10}
+    rewards: {money: 5000, reputation: 20, xp: 350, items: ["potion:explorer"]}
+
+  # ---------------- Исследование ----------------
+  e_far:
+    type: EXPLORE
+    name: "За горизонтом"
+    description: "Отойдите на 3 000 блоков от спавна."
+    icon: COMPASS
+    objective: {kind: REACH_DISTANCE, target: ANY, amount: 3000}
+    rewards: {money: 2000, reputation: 15, xp: 200, title: wanderer}
+  e_edge:
+    type: EXPLORE
+    name: "Край мира"
+    description: "Доберитесь до 9 000 блоков от спавна."
+    icon: FILLED_MAP
+    objective: {kind: REACH_DISTANCE, target: ANY, amount: 9000}
+    rewards: {money: 10000, reputation: 40, xp: 600, title: edge_walker}
+    requires: [e_far]
+  e_desert:
+    type: EXPLORE
+    name: "Пески времени"
+    description: "Посетите пустыню."
+    icon: SAND
+    objective: {kind: VISIT_BIOME, target: "DESERT", amount: 1}
+    rewards: {money: 800, reputation: 5, xp: 80}
+  e_cherry:
+    type: EXPLORE
+    name: "Розовый туман"
+    description: "Найдите вишнёвую рощу."
+    icon: CHERRY_SAPLING
+    objective: {kind: VISIT_BIOME, target: "CHERRY_GROVE", amount: 1}
+    rewards: {money: 1500, reputation: 10, xp: 150}
+  e_deep_dark:
+    type: EXPLORE
+    name: "Глубокая тьма"
+    description: "Спуститесь в Глубокую тьму."
+    icon: SCULK
+    objective: {kind: VISIT_BIOME, target: "DEEP_DARK", amount: 1}
+    rewards: {money: 3000, reputation: 15, xp: 300}
+
+  # ---------------- Боевые ----------------
+  c_first_blood:
+    type: COMBAT
+    name: "Первая кровь"
+    description: "Победите другого игрока."
+    icon: IRON_SWORD
+    objective: {kind: KILL_PLAYER, target: ANY, amount: 1}
+    rewards: {money: 1000, reputation: 5, xp: 100}
+  c_warlord:
+    type: COMBAT
+    name: "Полководец"
+    description: "Победите 10 разных игроков (по одному засчитанному в сутки за каждого)."
+    icon: NETHERITE_SWORD
+    objective: {kind: KILL_PLAYER, target: ANY, amount: 10}
+    rewards: {money: 10000, reputation: 30, xp: 600, title: warlord}
+    requires: [c_first_blood]
+
+  # ---------------- Событийные ----------------
+  ev_meteor:
+    type: EVENT
+    name: "Охотник за метеоритами"
+    description: "Получите награду в событии «Падение метеорита»."
+    icon: MAGMA_BLOCK
+    objective: {kind: EVENT, target: meteor, amount: 1}
+    rewards: {money: 2000, reputation: 10, xp: 200}
+    repeatable: true
+    repeat-cooldown-hours: 72
+  ev_cache:
+    type: EVENT
+    name: "Взломщик тайников"
+    description: "Получите награду в событии «Тайник Стражей»."
+    icon: CHEST
+    objective: {kind: EVENT, target: cache, amount: 1}
+    rewards: {money: 2000, reputation: 10, xp: 200}
+    repeatable: true
+    repeat-cooldown-hours: 72
+
+  # ---------------- Сюжет (Старейшина) ----------------
+  story_seals:
+    type: STORY
+    name: "Печати мира"
+    description: "Поговорите с Летописцем в лобби о печатях."
+    icon: WRITABLE_BOOK
+    npc: elder
+    objective: {kind: TALK, target: CHRONICLER, amount: 1}
+    rewards: {money: 1000, reputation: 10, xp: 100}
+  story_meteor:
+    type: STORY
+    name: "Огонь с небес"
+    description: "Примите участие в любом событии сервера и получите награду."
+    icon: FIRE_CHARGE
+    npc: elder
+    requires: [story_seals]
+    objective: {kind: EVENT, target: ANY, amount: 1}
+    rewards: {money: 3000, reputation: 15, xp: 300, items: ["potion:guardian"]}
+  story_offering:
+    type: STORY
+    name: "Дар старейшине"
+    description: "Принесите Старейшине 16 алмазов."
+    icon: DIAMOND
+    npc: elder
+    requires: [story_meteor]
+    objective: {kind: DELIVER, target: DIAMOND, amount: 16}
+    rewards: {money: 5000, reputation: 40, xp: 500, items: ["unique:seers_helm"], title: keeper}
+
+  # ---------------- NPC: Охотник (повторяемые) ----------------
+  npc_hunt_zombies:
+    type: NPC
+    name: "Заказ Охотника: нежить"
+    description: "Победите 40 зомби."
+    icon: ROTTEN_FLESH
+    npc: hunter
+    repeatable: true
+    repeat-cooldown-hours: 20
+    objective: {kind: KILL_MOB, target: "ZOMBIE,HUSK,DROWNED,ZOMBIE_VILLAGER", amount: 40}
+    rewards: {money: 1500, reputation: 6, xp: 120}
+  npc_hunt_spiders:
+    type: NPC
+    name: "Заказ Охотника: паутина"
+    description: "Принесите Охотнику 32 нити."
+    icon: STRING
+    npc: hunter
+    repeatable: true
+    repeat-cooldown-hours: 20
+    objective: {kind: DELIVER, target: STRING, amount: 32}
+    rewards: {money: 1200, reputation: 5, xp: 100}

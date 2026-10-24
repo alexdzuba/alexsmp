@@ -1,0 +1,100 @@
+# ============================================================
+#  Прогрессия: уровни, репутация, ранги, титулы, достижения
+#  Ранги прогрессии дают только косметику и никогда не дают служебных прав.
+#  Редактирование рангов — в игре: панель владельца → Ранги.
+# ============================================================
+levels:
+  max: 100
+  # Опыт для уровня L: xp-base × L ^ xp-exponent (суммарно).
+  xp-base: 60
+  xp-exponent: 1.6
+  xp-per-minute: 2
+  xp-per-achievement: 100
+  # Боевой бонус к урону за уровень (очень малый): 0.0002 = +0.02% за уровень, не более combat-bonus-max.
+  combat-bonus-per-level: 0.0002
+  combat-bonus-max: 0.02
+
+reputation:
+  pvp-kill: 2
+  pvp-death: -1
+
+# Ранги — по порядку. requires: level, reputation, playtime-hours, achievements, kills, events, quests, wealth, secrets, duel-wins.
+ranks:
+  newbie:
+    name: "&7Новичок"
+  wanderer:
+    name: "&aСтранник"
+    requires: {level: 5, playtime-hours: 3}
+    rewards: {money: 2000, cosmetic: notes, title: wanderer}
+  seeker:
+    name: "&bИскатель"
+    requires: {level: 15, reputation: 150, playtime-hours: 15}
+    rewards: {money: 10000, cosmetic: enchant, title: seeker}
+  veteran:
+    name: "&6Ветеран"
+    requires: {level: 30, reputation: 500, achievements: 10, playtime-hours: 50}
+    rewards: {money: 30000, cosmetic: flame, title: veteran}
+  legend:
+    name: "&5Легенда"
+    requires: {level: 50, reputation: 1500, achievements: 20, events: 15}
+    rewards: {money: 75000, cosmetic: soul, title: legend}
+  unknown:
+    name: "&4Неизвестный"
+    requires: {level: 80, reputation: 4000, achievements: 30, events: 40, playtime-hours: 300}
+    rewards: {money: 200000, cosmetic: end, title: unknown}
+
+titles:
+  wanderer: "&aСтранник"
+  seeker: "&bИскатель"
+  veteran: "&6Ветеран"
+  legend: "&5Легенда"
+  unknown: "&4Неизвестный"
+  edge_walker: "&3Идущий по краю"
+  warlord: "&cПолководец"
+  keeper: "&eХранитель даров"
+  hermit_friend: "&8Друг отшельника"
+  parkour_master: "&eПрыгун"
+  rich: "&6Магнат"
+  duelist: "&cДуэлянт"
+  secret_hunter: "&dИскатель тайн"
+  nether_pioneer: "&4Первопроходец Незера"
+  merchant: "&aКупец"
+
+# Достижения: срабатывают, когда статистика stat достигает value.
+# Статистика: kills, deaths, playtime_min, blocks_broken, blocks_placed, mobs_killed, enhanced_killed, fish_caught,
+# quests_done, story_done, events_done, secrets_found, parkour_done, max_distance, visited_nether, visited_end,
+# duel_wins, bounties_claimed, ah_sold, wars_won, level, reputation_max, loot_chests, combat_logouts.
+achievements:
+  first_blood: {name: "Первая кровь", description: "Победите игрока", stat: kills, value: 1, reputation: 10, icon: IRON_SWORD}
+  killer_25: {name: "Гроза сервера", description: "Победите 25 игроков", stat: kills, value: 25, reputation: 40, icon: DIAMOND_SWORD}
+  killer_100: {name: "Легенда арены", description: "Победите 100 игроков", stat: kills, value: 100, reputation: 100, title: warlord, icon: NETHERITE_SWORD}
+  first_death: {name: "Это только начало", description: "Погибните впервые", stat: deaths, value: 1, reputation: 2, icon: SKELETON_SKULL}
+  hour_1: {name: "Освоился", description: "Проведите в игре 1 час", stat: playtime_min, value: 60, reputation: 5, icon: CLOCK}
+  hours_24: {name: "Старожил", description: "Проведите в игре 24 часа", stat: playtime_min, value: 1440, reputation: 30, icon: CLOCK}
+  hours_100: {name: "Часть мира", description: "Проведите в игре 100 часов", stat: playtime_min, value: 6000, reputation: 80, icon: CLOCK}
+  miner_1k: {name: "Кротовья нора", description: "Сломайте 1 000 блоков", stat: blocks_broken, value: 1000, reputation: 5, icon: STONE_PICKAXE}
+  miner_50k: {name: "Сквозь горы", description: "Сломайте 50 000 блоков", stat: blocks_broken, value: 50000, reputation: 50, icon: DIAMOND_PICKAXE}
+  builder_10k: {name: "Архитектор", description: "Поставьте 10 000 блоков", stat: blocks_placed, value: 10000, reputation: 30, icon: BRICKS}
+  mobs_500: {name: "Ночной дозор", description: "Победите 500 мобов", stat: mobs_killed, value: 500, reputation: 20, icon: ZOMBIE_HEAD}
+  enhanced_10: {name: "Не по зубам", description: "Победите 10 усиленных мобов", stat: enhanced_killed, value: 10, reputation: 25, icon: WITHER_SKELETON_SKULL}
+  fisher_100: {name: "Терпение", description: "Поймайте 100 предметов на удочку", stat: fish_caught, value: 100, reputation: 15, icon: FISHING_ROD}
+  quests_10: {name: "Исполнитель", description: "Выполните 10 заданий", stat: quests_done, value: 10, reputation: 15, icon: MAP}
+  quests_100: {name: "Мастер заданий", description: "Выполните 100 заданий", stat: quests_done, value: 100, reputation: 60, icon: FILLED_MAP}
+  story_3: {name: "Голос старейшины", description: "Пройдите сюжет Старейшины", stat: story_done, value: 3, reputation: 30, icon: WRITABLE_BOOK}
+  events_1: {name: "Очевидец", description: "Получите награду в событии", stat: events_done, value: 1, reputation: 10, icon: NETHER_STAR}
+  events_25: {name: "Охотник за чудесами", description: "Получите награду в 25 событиях", stat: events_done, value: 25, reputation: 60, icon: BEACON}
+  parkour: {name: "Прыжок веры", description: "Пройдите паркур в лобби", stat: parkour_done, value: 1, reputation: 5, title: parkour_master, icon: GOLDEN_BOOTS}
+  far_5k: {name: "Дальний путь", description: "Отойдите на 5 000 блоков от спавна", stat: max_distance, value: 5000, reputation: 20, icon: COMPASS}
+  nether: {name: "Жар преисподней", description: "Побывайте в Незере", stat: visited_nether, value: 1, reputation: 15, title: nether_pioneer, icon: NETHERRACK}
+  end: {name: "На краю", description: "Побывайте в Энде", stat: visited_end, value: 1, reputation: 25, icon: END_STONE}
+  duels_10: {name: "Дуэлянт", description: "Победите в 10 дуэлях", stat: duel_wins, value: 10, reputation: 20, title: duelist, icon: GOLDEN_SWORD}
+  bounty_1: {name: "Наёмник", description: "Получите награду за голову", stat: bounties_claimed, value: 1, reputation: 10, icon: CROSSBOW}
+  seller_10: {name: "Купец", description: "Продайте 10 лотов на аукционе", stat: ah_sold, value: 10, reputation: 15, title: merchant, icon: GOLD_INGOT}
+  war_won: {name: "Победа", description: "Выиграйте войну кланов", stat: wars_won, value: 1, reputation: 30, icon: WHITE_BANNER}
+  level_25: {name: "Опытный", description: "Достигните 25 уровня", stat: level, value: 25, reputation: 20, icon: EXPERIENCE_BOTTLE}
+  level_50: {name: "Мастер", description: "Достигните 50 уровня", stat: level, value: 50, reputation: 50, icon: EXPERIENCE_BOTTLE}
+  explorer_25: {name: "Кладоискатель", description: "Откройте 25 сундуков структур", stat: loot_chests, value: 25, reputation: 20, icon: CHEST}
+  # Секретные
+  secret_1: {name: "Любопытство", description: "Найдите секрет", stat: secrets_found, value: 1, reputation: 10, secret: true, icon: ENDER_EYE}
+  secret_all: {name: "Все тайны лобби", description: "Найдите 4 секрета", stat: secrets_found, value: 4, reputation: 40, title: secret_hunter, cosmetic: villager, secret: true, icon: DRAGON_EGG}
+  coward: {name: "Беглец", description: "Выйдите из игры во время боя", stat: combat_logouts, value: 1, reputation: -5, secret: true, icon: RABBIT_FOOT}

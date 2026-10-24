@@ -1,0 +1,189 @@
+# ============================================================
+#  NPC (без сторонних плагинов). Облик: VILLAGER (profession), TRADER (странствующий торговец),
+#  MANNEQUIN (облик игрока, skin — ник с нужным скином).
+#  role: QUEST, TRADER, STORY, SECRET, EVENT, SERVICE.
+#  location: "мир;x;y;z;yaw;pitch" или относительно спавна SMP: "@spawn;dx;dy;dz;yaw".
+#  action: survival, duels, lobby, shop, sell, ah, orders, mail, quests, clans, ranks, top, events,
+#          dimensions, menu, cosmetics, report, trades, dialogue:<id>
+#  Управление в игре: /usmp npc ... и панель владельца → NPC.
+# ============================================================
+#  Место NPC можно задать так: "@anchor:<имя>" — точка постройки (лобби/город), создаётся автоматически при строительстве.
+config-version: 5
+npcs:
+  # ---------------- Лобби ----------------
+  guide:
+    name: "&b&lПроводник"
+    role: SERVICE
+    appearance: {type: MANNEQUIN, skin: "Notch"}
+    location: "@anchor:guide"
+    action: survival
+  duel_master:
+    name: "&c&lМастер дуэлей"
+    role: SERVICE
+    appearance: {type: MANNEQUIN, skin: "Dream"}
+    location: "@anchor:duel_master"
+    dialogue: duel_master
+  lobby_merchant:
+    name: "&aТорговец"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: WEAPONSMITH}
+    location: "@anchor:lobby_merchant"
+    action: shop
+  lobby_auctioneer:
+    name: "&6Аукционист"
+    role: SERVICE
+    appearance: {type: VILLAGER, profession: CARTOGRAPHER}
+    location: "@anchor:lobby_auctioneer"
+    action: ah
+  chronicler:
+    name: "&dЛетописец"
+    role: STORY
+    appearance: {type: VILLAGER, profession: LIBRARIAN}
+    location: "@anchor:chronicler"
+    dialogue: chronicler
+  rank_keeper:
+    name: "&eХранитель рангов"
+    role: SERVICE
+    appearance: {type: MANNEQUIN, skin: "jeb_"}
+    location: "@anchor:rank_keeper"
+    action: ranks
+  judge:
+    name: "&fСудья"
+    role: SERVICE
+    appearance: {type: VILLAGER, profession: CLERIC}
+    location: "@anchor:judge"
+    dialogue: judge
+  hermit:
+    name: "&8Отшельник"
+    role: SECRET
+    appearance: {type: VILLAGER, profession: NITWIT}
+    location: "@anchor:hermit"
+    dialogue: hermit
+
+  # ---------------- Город SMP ----------------
+  elder:
+    name: "&eСтарейшина"
+    role: QUEST
+    appearance: {type: VILLAGER, profession: LIBRARIAN}
+    location: "@anchor:elder"
+    dialogue: elder
+  smith:
+    name: "&6Кузнец"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: ARMORER}
+    location: "@anchor:smith"
+    trades:
+      - {item: "IRON_INGOT:16", price: 400}
+      - {item: "DIAMOND_PICKAXE#efficiency=2", price: 2500}
+      - {item: "DIAMOND_SWORD#sharpness=1", price: 2500}
+      - {item: "SHIELD#unbreaking=2", price: 400}
+      - {item: "ANVIL", price: 900}
+  alchemist:
+    name: "&5Алхимик"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: CLERIC}
+    location: "@anchor:alchemist"
+    trades:
+      - {item: "potion:night_vision_plus", price: 1500}
+      - {item: "potion:fire_plus", price: 3000}
+      - {item: "potion:speed_plus", price: 3500}
+      - {item: "potion:explorer", price: 3000}
+      - {item: "BLAZE_POWDER:4", price: 400}
+      - {item: "GLASS_BOTTLE:8", price: 40}
+  banker:
+    name: "&6Банкир"
+    role: SERVICE
+    appearance: {type: MANNEQUIN, skin: "Herobrine"}
+    location: "@anchor:banker"
+    action: ah
+  hunter:
+    name: "&cОхотник"
+    role: QUEST
+    appearance: {type: VILLAGER, profession: BUTCHER}
+    location: "@anchor:hunter"
+    dialogue: hunter
+  bartender:
+    name: "&6Трактирщик"
+    role: SERVICE
+    appearance: {type: VILLAGER, profession: BUTCHER}
+    location: "@anchor:bartender"
+    dialogue: bartender
+  trader_market:
+    name: "&aТорговка с рынка"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: FARMER}
+    location: "@anchor:trader_market"
+    trades:
+      - {item: "BREAD:16", price: 120}
+      - {item: "COOKED_BEEF:16", price: 300}
+      - {item: "GOLDEN_CARROT:8", price: 400}
+      - {item: "TORCH:32", price: 60}
+      - {item: "WHEAT_SEEDS:16", price: 40}
+  herald:
+    name: "&b&lГлашатай"
+    role: SERVICE
+    appearance: {type: MANNEQUIN, skin: "Steve"}
+    location: "@anchor:herald"
+    dialogue: herald
+  guard_s1:
+    name: "&7Стражник"
+    role: STORY
+    appearance: {type: MANNEQUIN, skin: "Technoblade"}
+    location: "@anchor:guard_s1"
+    dialogue: guard
+  guard_s2:
+    name: "&7Стражник"
+    role: STORY
+    appearance: {type: MANNEQUIN, skin: "Dream"}
+    location: "@anchor:guard_s2"
+    dialogue: guard
+  guard_e:
+    name: "&7Стражник"
+    role: STORY
+    appearance: {type: MANNEQUIN, skin: "Notch"}
+    location: "@anchor:guard_e"
+    dialogue: guard
+  scout:
+    name: "&bДозорный"
+    role: STORY
+    appearance: {type: VILLAGER, profession: CARTOGRAPHER}
+    location: "@anchor:scout"
+    dialogue: scout
+  archer:
+    name: "&cИнструктор"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: FLETCHER}
+    location: "@anchor:archer"
+    trades:
+      - {item: "ARROW:32", price: 150}
+      - {item: "BOW#power=1", price: 900}
+      - {item: "CROSSBOW", price: 700}
+      - {item: "SHIELD", price: 300}
+  fisher:
+    name: "&3Рыбак"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: FISHERMAN}
+    location: "@anchor:fisher"
+    trades:
+      - {item: "FISHING_ROD#lure=1", price: 700}
+      - {item: "COOKED_SALMON:16", price: 250}
+      - {item: "BUCKET", price: 120}
+  farmer:
+    name: "&2Фермер"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: FARMER}
+    location: "@anchor:farmer"
+    trades:
+      - {item: "WHEAT_SEEDS:32", price: 60}
+      - {item: "CARROT:16", price: 80}
+      - {item: "POTATO:16", price: 80}
+      - {item: "IRON_HOE", price: 250}
+  miller:
+    name: "&fМельник"
+    role: TRADER
+    appearance: {type: VILLAGER, profession: SHEPHERD}
+    location: "@anchor:miller"
+    trades:
+      - {item: "BREAD:16", price: 110}
+      - {item: "CAKE", price: 350}
+      - {item: "HAY_BLOCK:4", price: 120}

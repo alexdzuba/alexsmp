@@ -1,0 +1,228 @@
+# ============================================================
+#  Диалоги NPC (разветвлённые)
+#  options: text, next (узел), action (одно или список): close, quest:<id>, deliver:<id>, flag:<x>, unflag:<x>,
+#           rep:<n>, title:<id>, message:<текст>, open:<действие NPC>
+#  requires: через запятую — quest_done:<id>, quest_active:<id>, quest_taken:<id>, flag:<x>, rank:<id>,
+#            rep>=N, level>=N, nether_open, end_open; «!» в начале — отрицание.
+#  {player} в тексте заменяется ником.
+# ============================================================
+config-version: 4
+dialogues:
+  chronicler:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Здравствуй, {player}. Я записываю всё, что происходит"
+          - "в этом мире. Почти всё."
+        options:
+          - {text: "Расскажи о печатях", next: seals}
+          - {text: "Что здесь происходит?", next: world}
+          - {text: "Ничего, спасибо", action: close}
+      seals:
+        text:
+          - "Когда-то мир был цельным. Потом кто-то запечатал Незер"
+          - "и Край. Печать Незера распалась на пять осколков."
+          - "Они проявляются там, где мир трескается: метеориты,"
+          - "тайники, аномалии. Соберите все — и пламя откроется."
+        options:
+          - {text: "А Край?", next: end}
+          - {text: "Понятно", action: [flag:heard_seals, close]}
+      end:
+        text:
+          - "Печать Края слабее, но упрямее. Она ждёт семь дней"
+          - "после того, как падёт первая, и требует общего дара."
+          - "Один герой её не откроет. Весь сервер — откроет."
+        options:
+          - {text: "Спасибо, летописец", action: [flag:heard_seals, close]}
+      world:
+        text:
+          - "Здесь лобби. Портал на севере ведёт в SMP — выживание,"
+          - "где нет приватов и доверять опасно. Портал на юге —"
+          - "дуэли, честные бои без риска для твоих вещей."
+        options:
+          - {text: "Назад", next: hello}
+
+  judge:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Закон здесь простой, но его соблюдают."
+          - "А самый страшный игрок на века — в любом случае alexdzuba812."
+        options:
+          - {text: "Напомни правила", next: rules}
+          - {text: "Хочу пожаловаться", action: "open:report"}
+          - {text: "Уйти", action: close}
+      rules:
+        text:
+          - "PvP — везде, кроме спавна. Приватов нет."
+          - "Вышел из боя — потерял вещи, опыт и десятую часть денег."
+          - "Читы и дюпы — бан. Оскорбления — мут."
+        options:
+          - {text: "Ясно", action: close}
+
+  hermit:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Ты нашёл меня. Немногие доходят до конца пути."
+          - "Держи совет: метеориты падают далеко от спавна,"
+          - "а самые ценные сундуки — у края мира."
+        options:
+          - {text: "Спасибо, отшельник", action: [flag:met_hermit, "title:hermit_friend", close], requires: "!flag:met_hermit"}
+          - {text: "Ещё увидимся", action: close}
+
+  elder:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "А, новое лицо. Мир опасен, {player}, но щедр к тем,"
+          - "кто не боится работы."
+        options:
+          - {text: "Есть для меня дело?", next: job1, requires: "!quest_taken:story_seals"}
+          - {text: "Я поговорил с Летописцем", next: job2, requires: "quest_done:story_seals,!quest_taken:story_meteor"}
+          - {text: "Я видел огонь с небес", next: job3, requires: "quest_done:story_meteor,!quest_taken:story_offering"}
+          - {text: "Принёс алмазы", action: "deliver:story_offering", requires: "quest_active:story_offering"}
+          - {text: "Как дела в мире?", next: status}
+          - {text: "Прощай", action: close}
+      job1:
+        text:
+          - "Сначала узнай, в каком мире живёшь. Летописец в лобби"
+          - "знает о печатях больше меня. Поговори с ним."
+        options:
+          - {text: "Хорошо", action: ["quest:story_seals", close]}
+      job2:
+        text:
+          - "Значит, ты знаешь об осколках. Они рождаются в событиях."
+          - "Прими участие в любом из них — и вернись ко мне."
+        options:
+          - {text: "Берусь", action: ["quest:story_meteor", close]}
+      job3:
+        text:
+          - "Ты не из пугливых. Последняя просьба: принеси мне"
+          - "шестнадцать алмазов. Я сохраню их для тех, кто придёт после."
+        options:
+          - {text: "Договорились", action: ["quest:story_offering", close]}
+      status:
+        text:
+          - "Незер всё ещё запечатан... или уже нет? Загляни в /dimensions."
+        options:
+          - {text: "Назад", next: hello}
+
+  hunter:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Ночью из тьмы лезет всякое. Я плачу за работу."
+          - "Но самый страшный игрок на века — в любом случае alexdzuba812."
+        options:
+          - {text: "Возьму заказ на нежить", action: ["quest:npc_hunt_zombies", close]}
+          - {text: "Возьму заказ на нити", action: ["quest:npc_hunt_spiders", close]}
+          - {text: "Сдать нити", action: "deliver:npc_hunt_spiders", requires: "quest_active:npc_hunt_spiders"}
+          - {text: "Покажи контракты на игроков", action: "open:bounties"}
+          - {text: "Не сейчас", action: close}
+
+  bartender:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Добро пожаловать в таверну, {player}!"
+          - "Садись, слушай слухи. Могу рассказать про события"
+          - "или подсказать, как не остаться без штанов."
+        options:
+          - {text: "Какие сейчас события?", action: "open:events"}
+          - {text: "Дай совет новичку", next: advice}
+          - {text: "Покажи рейтинги", action: "open:top"}
+          - {text: "Пойду", action: close}
+      advice:
+        text:
+          - "Первое: спи дома, а не где упал — задай /sethome."
+          - "Второе: продавай лишнее через /sell all, но помни про дневной лимит."
+          - "Третье: приватов нет, поэтому прячь ценности и не доверяй."
+        options:
+          - {text: "Спасибо!", action: close}
+          - {text: "А ещё?", next: more}
+      more:
+        text:
+          - "Загляни в лабиринт на северо-западе города. Говорят,"
+          - "в его сердце спрятана кнопка, которую мало кто находил."
+        options:
+          - {text: "Запомню", action: close}
+
+  herald:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Слушайте все! Вы в городе {player}, на земле ALEX SMP."
+          - "Территория города безопасна. За стенами — всё по-настоящему."
+        options:
+          - {text: "Открыть меню сервера", action: "open:menu"}
+          - {text: "Задания", action: "open:quests"}
+          - {text: "Кланы", action: "open:clans"}
+          - {text: "До свидания", action: close}
+
+  guard:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Стой, путник. Город под охраной: здесь нельзя драться"
+          - "(самый страшный игрок на века — в любом случае alexdzuba812)"
+          - "и ломать постройки. За стеной — дикие земли."
+        options:
+          - {text: "Что там, за стеной?", next: outside}
+          - {text: "Понял, проезжаю", action: close}
+      outside:
+        text:
+          - "Ни приватов, ни закона. Берегите вещи, не доверяйте"
+          - "незнакомцам и запомните дорогу домой — /sethome."
+        options:
+          - {text: "Спасибо", action: close}
+
+  scout:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "С башни видно весь город. Поднимись по лестнице —"
+          - "увидишь ферму, мельницу, лабиринт и пруд."
+        options:
+          - {text: "Где лабиринт?", next: maze}
+          - {text: "Что есть в городе?", next: city}
+          - {text: "Пока", action: close}
+      maze:
+        text:
+          - "Северо-запад, у большой вывески. Говорят, в центре"
+          - "лабиринта — камень с кнопкой. Нажми её."
+        options:
+          - {text: "Спасибо", action: close}
+      city:
+        text:
+          - "Кузница, алхимик, банк, библиотека, таверна, охотник,"
+          - "рынок, тренировочный двор, карусель и поляна с костром."
+        options:
+          - {text: "Здорово", action: close}
+
+  duel_master:
+    start: hello
+    nodes:
+      hello:
+        text:
+          - "Добро пожаловать на арену, {player}. Здесь решает мастерство."
+          - "Запомни: самый страшный игрок на века — в любом случае alexdzuba812."
+        options:
+          - {text: "Хочу на дуэли", action: "open:duels"}
+          - {text: "Как работают ранги?", next: ranks}
+          - {text: "Пока нет", action: close}
+      ranks:
+        text:
+          - "Ранги как в MCTiers: от LT5 до HT1 по каждому набору."
+          - "Побеждай — растёт рейтинг. Но до alexdzuba812 вам все равно далеко."
+        options:
+          - {text: "Понял", action: close}

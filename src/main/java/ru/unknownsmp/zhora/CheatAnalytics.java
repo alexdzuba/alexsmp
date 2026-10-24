@@ -555,7 +555,7 @@ public final class CheatAnalytics {
             long since = System.currentTimeMillis() - windowMin * 60_000L;
             plugin.db().query(c -> {
                 List<Object[]> rows = new ArrayList<>();
-                try (PreparedStatement ps = Database.ps(c, "SELECT uuid, SUM(delta) FROM money_log WHERE at>=? AND delta>0 GROUP BY uuid HAVING SUM(delta)>=? ORDER BY SUM(delta) DESC LIMIT 5", since, threshold);
+                try (PreparedStatement ps = Database.ps(c, "SELECT uuid, SUM(delta) FROM money_log WHERE at>=? AND delta>0 AND reason NOT LIKE 'admin%' GROUP BY uuid HAVING SUM(delta)>=? ORDER BY SUM(delta) DESC LIMIT 5", since, threshold);
                      ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) rows.add(new Object[]{rs.getString(1), rs.getLong(2)});
                 }
@@ -564,7 +564,7 @@ public final class CheatAnalytics {
                     String uuid = (String) r[0];
                     String name = Database.strVal(c, "SELECT name FROM players WHERE uuid=?", uuid);
                     StringBuilder reasons = new StringBuilder();
-                    try (PreparedStatement ps = Database.ps(c, "SELECT reason, SUM(delta) FROM money_log WHERE uuid=? AND at>=? AND delta>0 GROUP BY reason ORDER BY SUM(delta) DESC LIMIT 3", uuid, since);
+                    try (PreparedStatement ps = Database.ps(c, "SELECT reason, SUM(delta) FROM money_log WHERE uuid=? AND at>=? AND delta>0 AND reason NOT LIKE 'admin%' GROUP BY reason ORDER BY SUM(delta) DESC LIMIT 3", uuid, since);
                          ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) reasons.append(rs.getString(1)).append("=").append(rs.getLong(2)).append(" ");
                     }

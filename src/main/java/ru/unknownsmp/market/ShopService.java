@@ -52,7 +52,7 @@ public final class ShopService implements Module {
     private final Map<UUID, Double> soldTotalToday = new ConcurrentHashMap<>();
     private volatile long cacheDay;
 
-    private double buyMarkup, sellFraction, enchantBonus, decayHalf = 256, decayFloor = 0.2, decayExpensive = 400;
+    private double buyMarkup, sellFraction, enchantBonus, decayHalf = 1024, decayFloor = 0.4, decayExpensive = 400;
     private long dailyLimit, itemSoftCap;
     private double softCapFloor;
     private Set<Integer> shopBlockedTags = Set.of();
@@ -107,8 +107,8 @@ public final class ShopService implements Module {
         dailyLimit = Math.max(0, c.getLong("sell.daily-limit-per-player", 2_000_000));
         itemSoftCap = Math.max(0, c.getLong("sell.item-soft-cap", 150_000));
         softCapFloor = clamp(c.getDouble("sell.over-cap-fraction", 0.1), 0, 1);
-        decayHalf = Math.max(1, c.getDouble("sell.volume-decay.half-items", 256));
-        decayFloor = clamp(c.getDouble("sell.volume-decay.floor", 0.2), 0.01, 1);
+        decayHalf = Math.max(1, c.getDouble("sell.volume-decay.half-items", 1024));
+        decayFloor = clamp(c.getDouble("sell.volume-decay.floor", 0.4), 0.01, 1);
         // С какой цены скупки (за 1 шт.) цена дорогих предметов падает быстрее. По умолчанию масштабируется вместе с value-scale,
         // иначе при value-scale: 10 почти всё считается «дорогим» и цена падает в разы быстрее задуманного.
         double scale = Math.max(0.0001, c.getDouble("pricing.value-scale", 1.0));

@@ -76,6 +76,11 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     private OrderService orders;
     private MailService mail;
     private ClanService clans;
+    private ru.unknownsmp.clans.ClaimService claims;
+    private ru.unknownsmp.clans.PointService points;
+    private ru.unknownsmp.items.CustomEnchantService enchants;
+    private ru.unknownsmp.economy.MoneyStoneService moneyStones;
+    private ru.unknownsmp.admin.LagGuard lagGuard;
     private WarService wars;
     private EventService events;
     private ru.unknownsmp.zhora.ZhoraService zhora;
@@ -187,6 +192,8 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
         orders = modules.add(new OrderService(this));
         clans = modules.add(new ClanService(this));
         wars = modules.add(new WarService(this));
+        claims = modules.add(new ru.unknownsmp.clans.ClaimService(this));
+        points = modules.add(new ru.unknownsmp.clans.PointService(this));
         dimensions = modules.add(new DimensionService(this));
         events = modules.add(new EventService(this));
         miniEvents = modules.add(new MiniEventService(this));
@@ -199,6 +206,9 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
         rollback = modules.add(new RollbackService(this));
         reports = modules.add(new ReportService(this));
         mobs = modules.add(new MobService(this));
+        enchants = modules.add(new ru.unknownsmp.items.CustomEnchantService(this));
+        moneyStones = modules.add(new ru.unknownsmp.economy.MoneyStoneService(this));
+        lagGuard = modules.add(new ru.unknownsmp.admin.LagGuard(this));
         zhora = modules.add(new ru.unknownsmp.zhora.ZhoraService(this));
         admin = modules.add(new AdminService(this));
         modules.add(new CoreCommands(this));
@@ -280,6 +290,11 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     public LuckService luck() { return luck; }
     public MiniEventService miniEvents() { return miniEvents; }
     public ItemService items() { return items; }
+    public ru.unknownsmp.clans.ClaimService claims() { return claims; }
+    public ru.unknownsmp.clans.PointService points() { return points; }
+    public ru.unknownsmp.items.CustomEnchantService enchants() { return enchants; }
+    public ru.unknownsmp.economy.MoneyStoneService moneyStones() { return moneyStones; }
+    public ru.unknownsmp.admin.LagGuard lagGuard() { return lagGuard; }
     public QuestService quests() { return quests; }
     public BountyService bounties() { return bounties; }
     public NpcService npcs() { return npcs; }

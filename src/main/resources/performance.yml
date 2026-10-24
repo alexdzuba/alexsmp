@@ -13,3 +13,15 @@ monitor:
 rollback:
   # Сколько блоков восстанавливать за тик при откате.
   blocks-per-tick: 300
+
+# Защита от лаг-машин. Команда для админов: /usmp lag
+lag-guard:
+  enabled: true
+  # Предел существ в одном чанке для размножения, яиц, спавнеров, големов (естественный спавн не трогается).
+  max-entities-per-chunk: 60
+  max-same-type-per-chunk: 30
+  max-hoppers-per-chunk: 64
+  # Если в чанке больше N изменений редстоуна в секунду несколько секунд подряд — редстоун в нём замораживается.
+  redstone-changes-per-second: 400
+  redstone-seconds: 5
+  redstone-freeze-seconds: 60

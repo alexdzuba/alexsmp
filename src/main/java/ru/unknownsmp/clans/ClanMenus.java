@@ -117,6 +117,10 @@ public final class ClanMenus {
                 set(23, Items.of(Material.LIME_BANNER).name("&aАльянсы").lore("&7Союзников: &f" + cl.allies.size()).build(), c -> allies(viewer, cl, this));
                 set(24, Items.of(Material.IRON_SWORD).name("&cВойны").lore("&7Активных: &f" + plugin.wars().warsOf(cl).size()).build(), c -> wars(viewer, this));
                 set(25, Items.of(Material.BOOKSHELF).name("&bДругие кланы").build(), c -> list(viewer, this));
+                if (plugin.claims() != null) set(29, Items.of(Material.GRASS_BLOCK).name("&aТерритория клана").lore("&7Приват, покупка земли, границы",
+                        "&7Территорий: &f" + plugin.claims().claimsOf(cl.id).size()).build(), c -> plugin.claims().menu(viewer, this));
+                if (plugin.points() != null) set(33, Items.of(Material.BEACON).name("&6Точки заработка").lore("&7Захватывайте точки — они платят",
+                        "&7в банк клана каждые несколько минут").build(), c -> plugin.points().menu(viewer, this));
                 if (leader) set(31, Items.of(Material.COMPARATOR).name("&6Права ролей").lore("&7Настройка прав офицеров и участников").build(), c -> perms(viewer, cl, this));
                 set(38, Items.of(Material.OAK_DOOR).name("&cПокинуть клан").build(), c -> confirmLeave(viewer));
                 if (leader) set(42, Items.of(Material.TNT).name("&4Распустить клан").lore("&7Средства банка вернутся лидеру").build(), c -> confirmDisband(viewer, cl));

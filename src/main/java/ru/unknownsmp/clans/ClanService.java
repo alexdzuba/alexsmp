@@ -343,6 +343,8 @@ public final class ClanService implements Module {
             busy.remove(cl.id);
             if (r[1] >= 0) plugin.economy().apply(leader, r[1]);
             if (plugin.wars() != null) plugin.wars().onDisband(cl);
+            if (plugin.claims() != null) plugin.claims().onDisband(cl);
+            if (plugin.points() != null) plugin.points().onDisband(cl);
             for (UUID u : cl.members.keySet()) memberOf.remove(u);
             for (Long a : cl.allies) { Clan o = clans.get(a); if (o != null) o.allies.remove(cl.id); }
             clans.remove(cl.id);
@@ -402,6 +404,10 @@ public final class ClanService implements Module {
         if (cl == null || !cl.can(p.getUniqueId(), Clan.Perm.HOME_SET)) { Msg.error(p, "clan.no-perm", "Недостаточно прав в клане."); return; }
         if (plugin.lobby().isLobby(p.getWorld()) || (plugin.duels() != null && plugin.duels().isDuelWorld(p.getWorld()))) {
             Msg.error(p, "home.world", "Точку клана можно установить только в мире выживания.");
+            return;
+        }
+        if (plugin.claims() != null && plugin.claims().homeMustBeInClaim(cl) && !plugin.claims().isInsideOwnClaim(p, p.getLocation())) {
+            Msg.error(p, "clan.home-claim", "Точку клана можно поставить только на территории клана (/clan claim).");
             return;
         }
         String loc = Text.loc(p.getLocation());
@@ -490,9 +496,10 @@ public final class ClanService implements Module {
 
     private void registerCommands() {
         plugin.commands().add("clan").player().perm("usmp.player.clan").module("clans").cat("Кланы")
-                .usage("/clan [create|invite|accept|leave|kick|deposit|withdraw|home|sethome|ally|war|info|disband]").desc("Кланы (GUI)")
+                .usage("/clan [create|invite|accept|leave|kick|deposit|withdraw|home|sethome|claim|points|ally|war|info|disband]").desc("Кланы (GUI)")
                 .exec((s, a) -> command((Player) s, a)).tab((s, a) -> {
-                    if (a.length == 1) return List.of("create", "invite", "accept", "leave", "kick", "deposit", "withdraw", "home", "sethome", "ally", "unally", "war", "peace", "info", "leader", "disband");
+                    if (a.length == 1) return List.of("create", "invite", "accept", "leave", "kick", "deposit", "withdraw", "home", "sethome", "claim", "points", "ally", "unally", "war", "peace", "info", "leader", "disband");
+                    if (a.length == 2 && a[0].equalsIgnoreCase("claim")) return List.of("wand", "pos1", "pos2", "buy", "list", "show", "info", "remove");
                     if (a.length == 2 && List.of("invite", "kick", "leader").contains(a[0].toLowerCase())) return Commands.players(a[1]);
                     if (a.length == 2 && List.of("ally", "unally", "war", "peace", "info").contains(a[0].toLowerCase())) {
                         List<String> t = new ArrayList<>();
@@ -540,6 +547,8 @@ public final class ClanService implements Module {
             case "withdraw" -> { if (a.length < 2) return; withdraw(p, Text.parseAmount(a[1])); }
             case "home" -> home(p);
             case "sethome" -> setHome(p);
+            case "claim", "land" -> { if (plugin.claims() != null) plugin.claims().command(p, a); }
+            case "points" -> { if (plugin.points() != null) plugin.points().menu(p, null); }
             case "ally" -> { if (a.length < 2) return; requestAlly(p, byTag(a[1])); }
             case "unally" -> { if (a.length < 2) return; breakAlly(p, byTag(a[1])); }
             case "war" -> { if (a.length < 2) { menus.wars(p, null); return; } plugin.wars().declare(p, byTag(a[1])); }

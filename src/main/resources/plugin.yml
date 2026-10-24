@@ -38,6 +38,7 @@ commands:
   ah: {description: Аукцион игроков, aliases: [auction]}
   orders: {description: Ордера на покупку и продажу}
   clan: {description: Кланы, aliases: [clans, guild]}
+  secretmoney: {description: Камни заработка}
   cc: {description: Клановый чат}
   events: {description: События сервера, aliases: [event]}
   dimensions: {description: Открытие измерений, aliases: [dim]}

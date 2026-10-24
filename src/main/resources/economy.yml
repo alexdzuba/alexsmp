@@ -17,3 +17,21 @@ pay:
   max: 1000000000
   # Подтверждение через GUI для крупных переводов.
   confirm-above: 100000
+
+# ------------------------------------------------------------
+#  Камни заработка (/secretmoney). income — сколько приносит камень за один период pay-every-seconds.
+#  При 60 секундах окупаемость = price / income минут.
+# ------------------------------------------------------------
+money-stones:
+  enabled: true
+  max-per-player: 10
+  pay-every-seconds: 60
+  # Доход идёт только когда владелец на сервере.
+  require-online: true
+  tiers:
+    coal: {name: "&8Угольный камень заработка", block: COAL_BLOCK, price: 30000, income: 500}
+    iron: {name: "&fЖелезный камень заработка", block: IRON_BLOCK, price: 60000, income: 1000}
+    gold: {name: "&6Золотой камень заработка", block: GOLD_BLOCK, price: 120000, income: 2000}
+    diamond: {name: "&bАлмазный камень заработка", block: DIAMOND_BLOCK, price: 240000, income: 4000}
+    emerald: {name: "&aИзумрудный камень заработка", block: EMERALD_BLOCK, price: 360000, income: 6000}
+    netherite: {name: "&5Незеритовый камень заработка", block: NETHERITE_BLOCK, price: 500000, income: 8350}

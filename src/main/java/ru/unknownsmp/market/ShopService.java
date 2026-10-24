@@ -280,6 +280,8 @@ public final class ShopService implements Module {
         if (it == null || it.getType().isAir()) return -1;
         Material m = it.getType();
         if (sellBlacklist.contains(m) || MenuListener.isMenuItem(it) || hasContents(it)) return -1;
+        // Камни заработка не скупаются (иначе дорогой блок продавался бы как обычный).
+        if (ru.unknownsmp.economy.MoneyStoneService.tierOf(it) != null) return -1;
         if (it.hasItemMeta() && it.getItemMeta().getPersistentDataContainer().has(Keys.of("duel_item"), org.bukkit.persistence.PersistentDataType.BYTE)) return -1;
         String type = plugin.items() == null ? null : plugin.items().typeOf(it);
         double base;
@@ -532,6 +534,8 @@ public final class ShopService implements Module {
                 }
                 set(30, Items.of(Material.HOPPER).name("&6Скупка").lore("&7Сервер принимает почти любые предметы").build(), cl -> openSell(viewer, this));
                 set(32, Items.of(Material.NAME_TAG).name("&eЦена предмета").lore("&7Возьмите в руку и нажмите /worth").build());
+                if (plugin.enchants() != null && plugin.enchants().shopEnabled()) set(34, Items.of(Material.NETHER_STAR).name("&5Особые чары")
+                        .lore("&7Автоплавка, Бур, Лесоруб, Вампиризм и другие", "", "&eОткрыть").build(), cl -> plugin.enchants().openShop(viewer, this));
                 if (booksEnabled) set(28, Items.of(Material.ENCHANTED_BOOK).name("&dКниги чар").lore("&7Любые чары любого уровня", "", "&eОткрыть").build(),
                         cl -> openBooks(viewer, this));
                 if (parent != null) parent(parent);

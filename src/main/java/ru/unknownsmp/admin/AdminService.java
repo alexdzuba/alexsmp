@@ -275,6 +275,9 @@ public final class AdminService implements Module, Listener {
             case "fun" -> funBuild(s, r);
             case "sign" -> signBuild(s);
             case "dump" -> dump(s, r);
+            case "clanpoint", "clanpoints" -> { if (need(s, "usmp.admin.events") && plugin.points() != null) plugin.points().admin(s, r); }
+            case "ench", "enchant" -> { if (need(s, "usmp.admin.items") && plugin.enchants() != null) plugin.enchants().admin(s, r); }
+            case "lag" -> { if (need(s, "usmp.admin.monitor") && plugin.lagGuard() != null) plugin.lagGuard().command(s, r); }
             case "dev" -> dev(s, r);
             case "auth" -> auth(s, r);
             case "lookup" -> lookup(s, r);
@@ -513,6 +516,9 @@ public final class AdminService implements Module, Listener {
                 {"usmp.admin.npc", "/usmp npc create <id> <VILLAGER|MANNEQUIN|TRADER> [скин/профессия] | remove | move | list | name | dialogue | action | role"},
                 {"usmp.admin.events", "/usmp event start <meteor|cache|anomaly|merchant|secrets> | stop; /usmp nether|end open|close; /usmp nether resetcd"},
                 {"usmp.admin.rollback", "/usmp rollback <игрок|*> <время> [радиус]"},
+                {"usmp.admin.events", "/usmp clanpoint add <id> [радиус] | remove <id> | reset <id> | list — точки заработка кланов"},
+                {"usmp.admin.items", "/usmp ench list | give <игрок> <id> [уровень] — особые чары"},
+                {"usmp.admin.monitor", "/usmp lag | lag tp <номер> | lag unfreeze — нагруженные чанки и лаг-машины"},
                 {"usmp.mod.inspect", "/usmp inspect — история блоков"},
                 {"usmp.mod.vanish", "/usmp vanish"},
                 {"usmp.mod.tp", "/usmp tp <игрок>"},
@@ -698,7 +704,7 @@ public final class AdminService implements Module, Listener {
 
     private List<String> tab(CommandSender s, String[] a) {
         if (a.length == 1) return new ArrayList<>(List.of("help", "reload", "status", "panel", "setup", "setspawn", "setlobby", "maintenance", "backup", "role", "money",
-                "item", "npc", "event", "nether", "end", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
+                "item", "npc", "event", "nether", "end", "clanpoint", "ench", "lag", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) return switch (sub) {
             case "backup" -> List.of("now", "list", "verify", "restore", "cancel");
@@ -708,6 +714,9 @@ public final class AdminService implements Module, Listener {
             case "event" -> List.of("start", "stop");
             case "nether" -> List.of("open", "close", "resetcd");
             case "end" -> List.of("open", "close");
+            case "clanpoint" -> List.of("add", "remove", "reset", "list");
+            case "ench" -> List.of("list", "give");
+            case "lag" -> List.of("tp", "unfreeze");
             case "maintenance" -> List.of("on", "off");
             case "auth" -> List.of("reset", "unlock", "unregister", "revoke");
             case "gm" -> List.of("0", "1", "2", "3");

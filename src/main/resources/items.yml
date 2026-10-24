@@ -208,3 +208,24 @@ exploration:
   chance-per-1000-blocks: 0.02
   max-chance: 0.25
   far-distance: 6000
+
+# ------------------------------------------------------------
+#  Особые чары: книги в /shop → «Особые чары» и /usmp ench give. Накладываются кликом книгой по предмету.
+#  Цена книги = цена × уровень².
+# ------------------------------------------------------------
+custom-enchants:
+  enabled: true
+  shop: true
+  max-per-item: 3
+  timber-max-logs: 80
+  prices:
+    autosmelt: 60000
+    telekinesis: 40000
+    drill: 150000
+    timber: 80000
+    vampire: 30000
+    thunder: 50000
+    nightvision: 25000
+    springs: 20000
+    haste: 40000
+    wisdom: 25000

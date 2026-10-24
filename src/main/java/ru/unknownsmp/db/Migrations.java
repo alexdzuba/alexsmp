@@ -87,6 +87,14 @@ public final class Migrations {
                     "CREATE TABLE IF NOT EXISTS zhora_evidence (id {ID}, case_id BIGINT NOT NULL, at BIGINT NOT NULL, detector TEXT, severity INTEGER DEFAULT 0, details TEXT, confirmed INTEGER DEFAULT 0)",
                     "CREATE INDEX IF NOT EXISTS idx_zev_case ON zhora_evidence(case_id, at)",
                     "CREATE TABLE IF NOT EXISTS zhora_chat (id {ID}, at BIGINT NOT NULL, uuid TEXT, name TEXT, role TEXT NOT NULL, text TEXT NOT NULL)",
+            },
+            new String[]{
+                    // v5: территории кланов, точки заработка кланов, камни заработка.
+                    "CREATE TABLE IF NOT EXISTS clan_claims (id {ID}, clan_id BIGINT NOT NULL, world TEXT NOT NULL, x1 INTEGER NOT NULL, z1 INTEGER NOT NULL, x2 INTEGER NOT NULL, z2 INTEGER NOT NULL, created_at BIGINT, cost BIGINT)",
+                    "CREATE INDEX IF NOT EXISTS idx_claims_clan ON clan_claims(clan_id)",
+                    "CREATE TABLE IF NOT EXISTS clan_points (id TEXT PRIMARY KEY, world TEXT NOT NULL, x INTEGER, y INTEGER, z INTEGER, radius INTEGER, owner BIGINT DEFAULT 0, captured_at BIGINT DEFAULT 0)",
+                    "CREATE TABLE IF NOT EXISTS money_stones (id {ID}, owner TEXT NOT NULL, tier TEXT NOT NULL, world TEXT NOT NULL, x INTEGER NOT NULL, y INTEGER NOT NULL, z INTEGER NOT NULL, placed_at BIGINT, earned BIGINT DEFAULT 0)",
+                    "CREATE INDEX IF NOT EXISTS idx_stones_owner ON money_stones(owner)",
             }
     );
 
@@ -146,5 +154,6 @@ public final class Migrations {
             "activity", "homes", "money_log", "auction_lots", "orders", "mail", "price_state", "clans", "clan_members",
             "clan_allies", "clan_bank_log", "wars", "war_blocks", "unique_items", "world_state", "quest_progress",
             "bounties", "event_history", "collective", "punishments", "reports", "block_log", "action_log", "parkour", "duel_stash", "sell_quota",
-            "zhora_memory", "zhora_mute", "chronicle", "zhora_complaints", "zhora_cases", "zhora_evidence", "zhora_chat"};
+            "zhora_memory", "zhora_mute", "chronicle", "zhora_complaints", "zhora_cases", "zhora_evidence", "zhora_chat",
+            "clan_claims", "clan_points", "money_stones"};
 }

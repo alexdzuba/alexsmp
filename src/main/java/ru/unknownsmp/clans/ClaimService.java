@@ -349,6 +349,18 @@ public final class ClaimService implements Module, Listener {
         if (protectExplosions) e.blockList().removeIf(b -> claimAt(b) != null);
     }
 
+    /** Взрывы на территории не ранят животных, жителей, стойки и рамки (игроков и монстров — как обычно). */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void explosionDamage(org.bukkit.event.entity.EntityDamageEvent e) {
+        if (!protectExplosions) return;
+        var cause = e.getCause();
+        if (cause != org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_EXPLOSION
+                && cause != org.bukkit.event.entity.EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) return;
+        Entity v = e.getEntity();
+        if (v instanceof Player || v instanceof Monster) return;
+        if (claimAt(v.getLocation()) != null) e.setCancelled(true);
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void burn(BlockBurnEvent e) {
         if (claimAt(e.getBlock()) != null) e.setCancelled(true);

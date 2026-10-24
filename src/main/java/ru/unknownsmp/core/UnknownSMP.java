@@ -81,6 +81,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     private ru.unknownsmp.items.CustomEnchantService enchants;
     private ru.unknownsmp.economy.MoneyStoneService moneyStones;
     private ru.unknownsmp.admin.LagGuard lagGuard;
+    private ru.unknownsmp.world.ChunkLoaderService chunkLoaders;
     private WarService wars;
     private EventService events;
     private ru.unknownsmp.zhora.ZhoraService zhora;
@@ -209,6 +210,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
         enchants = modules.add(new ru.unknownsmp.items.CustomEnchantService(this));
         moneyStones = modules.add(new ru.unknownsmp.economy.MoneyStoneService(this));
         lagGuard = modules.add(new ru.unknownsmp.admin.LagGuard(this));
+        chunkLoaders = modules.add(new ru.unknownsmp.world.ChunkLoaderService(this));
         zhora = modules.add(new ru.unknownsmp.zhora.ZhoraService(this));
         admin = modules.add(new AdminService(this));
         modules.add(new CoreCommands(this));
@@ -295,6 +297,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     public ru.unknownsmp.items.CustomEnchantService enchants() { return enchants; }
     public ru.unknownsmp.economy.MoneyStoneService moneyStones() { return moneyStones; }
     public ru.unknownsmp.admin.LagGuard lagGuard() { return lagGuard; }
+    public ru.unknownsmp.world.ChunkLoaderService chunkLoaders() { return chunkLoaders; }
     public QuestService quests() { return quests; }
     public BountyService bounties() { return bounties; }
     public NpcService npcs() { return npcs; }

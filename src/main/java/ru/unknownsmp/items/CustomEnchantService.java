@@ -63,7 +63,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class CustomEnchantService implements Module, Listener {
     public enum Target {
         PICKAXE("кирка"), DIGGER("кирка/лопата"), AXE("топор"), WEAPON("меч/топор"), SWORD("меч"), TOOL("инструмент/оружие"),
-        HELMET("шлем"), BOOTS("ботинки"), MINING("кирка/лопата/топор/мотыга");
+        HELMET("шлем"), BOOTS("ботинки"), MINING("кирка/лопата/топор/мотыга"), CHESTPLATE("нагрудник"), LEGGINGS("поножи"),
+        ARMOR("любая броня"), BOW("лук/арбалет"), ROD("удочка"), ANY("любой предмет с прочностью");
 
         public final String display;
 
@@ -83,6 +84,12 @@ public final class CustomEnchantService implements Module, Listener {
                 case HELMET -> n.endsWith("_HELMET") || m == Material.TURTLE_HELMET;
                 case BOOTS -> n.endsWith("_BOOTS");
                 case MINING -> pick || shovel || axe || hoe;
+                case CHESTPLATE -> n.endsWith("_CHESTPLATE");
+                case LEGGINGS -> n.endsWith("_LEGGINGS");
+                case ARMOR -> n.endsWith("_HELMET") || n.endsWith("_CHESTPLATE") || n.endsWith("_LEGGINGS") || n.endsWith("_BOOTS") || m == Material.TURTLE_HELMET;
+                case BOW -> m == Material.BOW || m == Material.CROSSBOW;
+                case ROD -> m == Material.FISHING_ROD;
+                case ANY -> m.getMaxDurability() > 0;
             };
         }
     }
@@ -95,13 +102,26 @@ public final class CustomEnchantService implements Module, Listener {
         reg(new Ench("autosmelt", "Автоплавка", 1, Target.DIGGER, 60_000, "Руда сразу выпадает слитками (только руды)"));
         reg(new Ench("telekinesis", "Телекинез", 1, Target.TOOL, 40_000, "Добыча и лут с мобов сразу в инвентарь"));
         reg(new Ench("drill", "Бур", 1, Target.DIGGER, 150_000, "Копает область 3×3. Режим: присесть + колёсико"));
-        reg(new Ench("timber", "Лесоруб", 1, Target.AXE, 80_000, "Срубает дерево целиком (не работает приседая)"));
+        reg(new Ench("timber", "Лесоруб", 1, Target.AXE, 80_000, "Срубает дерево целиком"));
         reg(new Ench("vampire", "Вампиризм", 3, Target.WEAPON, 30_000, "Лечит на 5% урона за уровень"));
         reg(new Ench("thunder", "Громовержец", 2, Target.SWORD, 50_000, "Шанс 6% за уровень ударить молнией"));
         reg(new Ench("nightvision", "Ночное зрение", 1, Target.HELMET, 25_000, "Постоянное ночное зрение"));
         reg(new Ench("springs", "Пружины", 2, Target.BOOTS, 20_000, "Прыжок выше"));
         reg(new Ench("haste", "Спешка", 2, Target.MINING, 40_000, "Быстрее копает, пока в руке"));
         reg(new Ench("wisdom", "Мудрость", 3, Target.TOOL, 25_000, "+50% опыта за уровень"));
+        reg(new Ench("lucky", "Удачливый шахтёр", 3, Target.PICKAXE, 50_000, "Шанс 5% за уровень удвоить добычу с руды"));
+        reg(new Ench("execute", "Казнь", 3, Target.SWORD, 40_000, "+10% урона за уровень по врагам ниже 30% здоровья"));
+        reg(new Ench("poison", "Яд", 2, Target.SWORD, 30_000, "Шанс 10% за уровень отравить цель на 3 сек"));
+        reg(new Ench("behead", "Обезглавливание", 3, Target.WEAPON, 45_000, "Шанс 3/6/10% выбить голову игрока или моба"));
+        reg(new Ench("bleed", "Кровотечение", 2, Target.AXE, 35_000, "После удара цель теряет здоровье ещё 3/5 сек"));
+        reg(new Ench("frost", "Ледяная стрела", 2, Target.BOW, 30_000, "Стрелы замедляют цель"));
+        reg(new Ench("secondwind", "Второе дыхание", 1, Target.CHESTPLATE, 120_000, "Ниже 4 сердец — Регенерация II на 5 сек (откат 2 мин)"));
+        reg(new Ench("steelskin", "Стальная кожа", 2, Target.LEGGINGS, 50_000, "−5% входящего урона за уровень"));
+        reg(new Ench("pyro", "Пиро", 1, Target.ARMOR, 250_000, "Иммунитет к огню и лаве"));
+        reg(new Ench("stealth", "Невидимка", 1, Target.HELMET, 150_000, "Присесть с пустой рукой — невидимость до 10 сек, броня скрыта (откат 30 сек)"));
+        reg(new Ench("fisher", "Рыбак", 3, Target.ROD, 25_000, "Клюёт быстрее, чаще ловятся сокровища"));
+        reg(new Ench("bookfisher", "Опытный рыбак", 1, Target.ROD, 100_000, "Небольшой шанс выловить книгу особых чар"));
+        reg(new Ench("unbreakable", "Неломайка", 1, Target.ANY, 400_000, "Предмет не ломается: останавливается на 1 прочности"));
     }
 
     private static void reg(Ench e) { ALL.put(e.id(), e); }
@@ -127,7 +147,8 @@ public final class CustomEnchantService implements Module, Listener {
     private final java.util.Random rnd = new java.util.Random();
     private final Set<UUID> busy = ConcurrentHashMap.newKeySet();
     private boolean enabled = true, shopEnabled = true;
-    private int maxPerItem = 3, timberMax = 80;
+    private int maxPerItem = 5, timberMax = 80;
+    private double bookChance = 0.005;
     private final Map<String, Long> prices = new ConcurrentHashMap<>();
 
     public CustomEnchantService(UnknownSMP plugin) {
@@ -150,7 +171,8 @@ public final class CustomEnchantService implements Module, Listener {
         YamlConfiguration c = plugin.configs().get("items.yml");
         enabled = c.getBoolean("custom-enchants.enabled", true);
         shopEnabled = c.getBoolean("custom-enchants.shop", true);
-        maxPerItem = Math.max(1, c.getInt("custom-enchants.max-per-item", 3));
+        maxPerItem = Math.max(1, c.getInt("custom-enchants.max-enchants-per-item", 5));
+        bookChance = Math.max(0, Math.min(1, c.getDouble("custom-enchants.bookfisher-chance", 0.005)));
         timberMax = Math.max(8, Math.min(256, c.getInt("custom-enchants.timber-max-logs", 80)));
         prices.clear();
         for (Ench e : ALL.values()) prices.put(e.id(), Math.max(1, c.getLong("custom-enchants.prices." + e.id(), e.basePrice())));
@@ -172,52 +194,48 @@ public final class CustomEnchantService implements Module, Listener {
     private static org.bukkit.NamespacedKey bookKey() { return Keys.of("ce_book"); }
     private static org.bukkit.NamespacedKey modeKey() { return Keys.of("ce_mode"); }
 
-    /** Режим кирки/лопаты с Буром и/или Автоплавкой. Переключается: присесть + колёсико мыши. */
-    public enum Mode {
-        NONE("&7Ничего"), DRILL("&eБур"), SMELT("&6Автоплавка"), BOTH("&eБур &7+ &6Автоплавка");
+    /**
+     * Переключаемые чары: то, что иногда мешает (Бур, Автоплавка, Лесоруб, Телекинез). Если на предмете есть хотя бы одни,
+     * «присесть + колёсико» перебирает все их сочетания: ничего → … → всё включено.
+     */
+    private static final List<String> TOGGLES = List.of("drill", "autosmelt", "timber", "telekinesis");
 
-        public final String display;
-
-        Mode(String d) { display = d; }
-    }
-
-    /** Доступные режимы для предмета (по наложенным чарам). */
-    private static List<Mode> modesFor(Map<String, Integer> m) {
-        boolean d = m.containsKey("drill"), a = m.containsKey("autosmelt");
-        List<Mode> out = new ArrayList<>();
-        if (!d && !a) return out;
-        out.add(Mode.NONE);
-        if (d) out.add(Mode.DRILL);
-        if (a) out.add(Mode.SMELT);
-        if (d && a) out.add(Mode.BOTH);
+    private static List<String> togglesOf(Map<String, Integer> m) {
+        List<String> out = new ArrayList<>();
+        for (String t : TOGGLES) if (m.containsKey(t)) out.add(t);
         return out;
     }
 
-    /** Текущий режим; по умолчанию включено всё, что есть на предмете. */
-    public static Mode mode(ItemStack it, Map<String, Integer> m) {
-        List<Mode> av = modesFor(m);
-        if (av.isEmpty()) return Mode.NONE;
-        String s = it.getItemMeta().getPersistentDataContainer().get(modeKey(), PersistentDataType.STRING);
-        if (s != null) {
-            try { Mode md = Mode.valueOf(s); if (av.contains(md)) return md; } catch (IllegalArgumentException ignored) {}
+    /** Включённые переключаемые чары. По умолчанию включено всё. Поддерживает старые режимы NONE/DRILL/SMELT/BOTH. */
+    private static Set<String> enabledSet(PersistentDataContainer pdc, Map<String, Integer> m) {
+        List<String> t = togglesOf(m);
+        Set<String> out = new HashSet<>(t);
+        String s = pdc.get(modeKey(), PersistentDataType.STRING);
+        if (s == null) return out;
+        switch (s) {
+            case "NONE" -> { out.remove("drill"); out.remove("autosmelt"); return out; }
+            case "DRILL" -> { out.remove("autosmelt"); return out; }
+            case "SMELT" -> { out.remove("drill"); return out; }
+            case "BOTH" -> { return out; }
+            default -> { }
         }
-        return av.get(av.size() - 1);
+        out.clear();
+        if (!s.equals("-")) for (String id : s.split(",")) if (t.contains(id)) out.add(id);
+        return out;
     }
 
-    private static boolean drillOn(ItemStack it, Map<String, Integer> m) {
-        if (!m.containsKey("drill")) return false;
-        Mode md = mode(it, m);
-        return md == Mode.DRILL || md == Mode.BOTH;
+    /** Работают ли чары id на предмете (с учётом режима колёсика). */
+    public static boolean on(ItemStack it, Map<String, Integer> m, String id) {
+        if (!m.containsKey(id)) return false;
+        if (!TOGGLES.contains(id)) return true;
+        return enabledSet(it.getItemMeta().getPersistentDataContainer(), m).contains(id);
     }
 
-    private static boolean smeltOn(ItemStack it, Map<String, Integer> m) {
-        if (!m.containsKey("autosmelt")) return false;
-        Mode md = mode(it, m);
-        return md == Mode.SMELT || md == Mode.BOTH;
-    }
-
-    private static boolean isOre(Material m) {
-        return m.name().endsWith("_ORE") || m == Material.ANCIENT_DEBRIS;
+    private static String modeName(Set<String> set, List<String> order) {
+        if (set.isEmpty()) return "&7Ничего";
+        StringBuilder sb = new StringBuilder();
+        for (String id : order) if (set.contains(id)) { if (!sb.isEmpty()) sb.append(" &7+ "); sb.append("&e").append(ALL.get(id).name()); }
+        return sb.toString();
     }
 
     /** Присесть + прокрутить колёсико: переключение режима вместо смены слота. */
@@ -231,20 +249,35 @@ public final class CustomEnchantService implements Module, Listener {
         ItemStack it = p.getInventory().getItem(e.getPreviousSlot());
         if (it == null || it.getType().isAir()) return;
         Map<String, Integer> m = read(it);
-        List<Mode> av = modesFor(m);
-        if (av.isEmpty()) return;
+        List<String> t = togglesOf(m);
+        if (t.isEmpty()) return;
         e.setCancelled(true);
-        int idx = av.indexOf(mode(it, m));
-        Mode next = av.get(Math.floorMod(idx + (diff == 1 ? 1 : -1), av.size()));
+        Set<String> cur = enabledSet(it.getItemMeta().getPersistentDataContainer(), m);
+        int mask = 0;
+        for (int i = 0; i < t.size(); i++) if (cur.contains(t.get(i))) mask |= 1 << i;
+        int total = 1 << t.size();
+        mask = Math.floorMod(mask + (diff == 1 ? 1 : -1), total);
+        Set<String> next = new HashSet<>();
+        List<String> ids = new ArrayList<>();
+        for (int i = 0; i < t.size(); i++) if ((mask & (1 << i)) != 0) { next.add(t.get(i)); ids.add(t.get(i)); }
         ItemMeta meta = it.getItemMeta();
-        meta.getPersistentDataContainer().set(modeKey(), PersistentDataType.STRING, next.name());
+        meta.getPersistentDataContainer().set(modeKey(), PersistentDataType.STRING, ids.isEmpty() ? "-" : String.join(",", ids));
         it.setItemMeta(meta);
         write(it, m);
         p.getInventory().setItem(e.getPreviousSlot(), it);
-        StringBuilder bar = new StringBuilder("&7Режим: ");
-        for (Mode md : av) bar.append(md == next ? "&l" + md.display + "&r" : "&8" + Text.strip(md.display)).append("  ");
-        Msg.actionBar(p, bar.toString().trim());
-        Msg.sound(p, Sound.UI_BUTTON_CLICK, 0.6f, next == Mode.NONE ? 0.8f : 1.4f);
+        Msg.actionBar(p, "&7Режим " + (mask + 1) + "/" + total + ": " + modeName(next, TOGGLES));
+        Msg.sound(p, Sound.UI_BUTTON_CLICK, 0.6f, next.isEmpty() ? 0.8f : 1.4f);
+    }
+
+    /** Удачливый шахтёр: шанс удвоить добычу с руды (не с «Шёлковым касанием», чтобы не множить сами руды). */
+    private boolean luckyRoll(ItemStack tool, Map<String, Integer> m, Material broken) {
+        int l = m.getOrDefault("lucky", 0);
+        if (l <= 0 || !isOre(broken) || tool.containsEnchantment(org.bukkit.enchantments.Enchantment.SILK_TOUCH)) return false;
+        return rnd.nextDouble() < 0.05 * l;
+    }
+
+    private static boolean isOre(Material m) {
+        return m.name().endsWith("_ORE") || m == Material.ANCIENT_DEBRIS;
     }
 
     public static Map<String, Integer> read(ItemStack it) {
@@ -280,12 +313,7 @@ public final class CustomEnchantService implements Module, Listener {
             Ench en = ALL.get(e.getKey());
             ours.add("&d" + en.name() + (en.max() > 1 ? " " + roman(e.getValue()) : ""));
         }
-        if (!modesFor(map).isEmpty()) {
-            it.setItemMeta(meta);
-            ours.add("&7Режим: " + mode(it, map).display + " &8(присесть + колёсико)");
-            meta = it.getItemMeta();
-            pdc = meta.getPersistentDataContainer();
-        }
+        if (!togglesOf(map).isEmpty()) ours.add("&7Режим: " + modeName(enabledSet(pdc, map), TOGGLES) + " &8(присесть + колёсико)");
         List<Component> res = new ArrayList<>(Text.lore(ours));
         res.addAll(lore);
         meta.lore(res.isEmpty() ? null : res);
@@ -361,11 +389,14 @@ public final class CustomEnchantService implements Module, Listener {
         ItemStack tool = p.getInventory().getItemInMainHand();
         Map<String, Integer> m = read(tool);
         if (m.isEmpty()) return;
-        boolean smelt = smeltOn(tool, m) && isOre(e.getBlockState().getType()), tele = m.containsKey("telekinesis");
+        Material broken = e.getBlockState().getType();
+        boolean smelt = on(tool, m, "autosmelt") && isOre(broken), tele = on(tool, m, "telekinesis");
+        boolean lucky = luckyRoll(tool, m, broken);
         Iterator<Item> it = e.getItems().iterator();
         while (it.hasNext()) {
             Item item = it.next();
             ItemStack st = item.getItemStack();
+            if (lucky) { st = st.clone(); st.setAmount(Math.min(st.getMaxStackSize(), st.getAmount() * 2)); item.setItemStack(st); }
             if (smelt) {
                 Material to = SMELT.get(st.getType());
                 if (to != null) { st = new ItemStack(to, st.getAmount()); item.setItemStack(st); }
@@ -393,10 +424,10 @@ public final class CustomEnchantService implements Module, Listener {
         Map<String, Integer> m = read(tool);
         if (m.isEmpty()) return;
         Block origin = e.getBlock();
-        if (m.containsKey("timber") && Tag.LOGS.isTagged(origin.getType()) && !p.isSneaking()) {
+        if (on(tool, m, "timber") && Tag.LOGS.isTagged(origin.getType())) {
             List<Block> logs = collectTree(origin);
             Tasks.later(1, () -> breakAll(p, logs));
-        } else if (drillOn(tool, m)) {
+        } else if (on(tool, m, "drill")) {
             BlockFace face = p.getTargetBlockFace(6);
             if (face == null) face = BlockFace.UP;
             List<Block> area = new ArrayList<>();
@@ -461,11 +492,12 @@ public final class CustomEnchantService implements Module, Listener {
                 Bukkit.getPluginManager().callEvent(ev);
                 if (ev.isCancelled()) continue;
                 Map<String, Integer> m = read(tool);
-                boolean smelt = smeltOn(tool, m), tele = m.containsKey("telekinesis");
+                boolean smelt = on(tool, m, "autosmelt"), tele = on(tool, m, "telekinesis");
+                boolean lucky = luckyRoll(tool, m, b.getType());
                 if (!ev.isDropItems()) {
                     // Другой обработчик запретил выпадение (например, камень заработка уже вернул себя предметом).
                     b.setType(Material.AIR);
-                } else if (!smelt && !tele) {
+                } else if (!smelt && !tele && !lucky) {
                     b.breakNaturally(tool, true, true);
                 } else {
                     // Сами собираем добычу, чтобы Автоплавка и Телекинез работали на всей области Бура.
@@ -477,6 +509,7 @@ public final class CustomEnchantService implements Module, Listener {
                     b.getWorld().spawnParticle(org.bukkit.Particle.BLOCK, at, 12, 0.3, 0.3, 0.3, data);
                     b.getWorld().playSound(at, data.getSoundGroup().getBreakSound(), 0.8f, 1f);
                     for (ItemStack d : drops) {
+                        if (lucky) d.setAmount(Math.min(d.getMaxStackSize(), d.getAmount() * 2));
                         if (smelt && isOre(type)) {
                             Material to = SMELT.get(d.getType());
                             if (to != null) d = new ItemStack(to, d.getAmount());
@@ -502,10 +535,23 @@ public final class CustomEnchantService implements Module, Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void combat(EntityDamageByEntityEvent e) {
-        if (!enabled || !(e.getDamager() instanceof Player p) || !(e.getEntity() instanceof LivingEntity victim)) return;
+        if (!enabled || !(e.getEntity() instanceof LivingEntity victim)) return;
+        // Ледяная стрела: метка на снаряде ставится при выстреле.
+        if (e.getDamager() instanceof org.bukkit.entity.Projectile pr) {
+            Integer fl = pr.getPersistentDataContainer().get(Keys.of("ce_frost"), PersistentDataType.INTEGER);
+            if (fl != null && fl > 0) victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60 + 20 * fl, fl - 1));
+            if (pr.getShooter() instanceof Player sh) endStealth(sh);
+            return;
+        }
+        if (!(e.getDamager() instanceof Player p)) return;
+        endStealth(p);
         if (damageGuard.contains(p.getUniqueId())) return;
         Map<String, Integer> m = read(p.getInventory().getItemInMainHand());
         if (m.isEmpty()) return;
+        int poison = m.getOrDefault("poison", 0);
+        if (poison > 0 && rnd.nextDouble() < 0.10 * poison) victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0));
+        int bleed = m.getOrDefault("bleed", 0);
+        if (bleed > 0) startBleed(victim, bleed == 1 ? 3 : 5);
         int vamp = m.getOrDefault("vampire", 0);
         if (vamp > 0) {
             var attr = p.getAttribute(Attribute.MAX_HEALTH);
@@ -522,14 +568,21 @@ public final class CustomEnchantService implements Module, Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void death(EntityDeathEvent e) {
-        if (!enabled || e.getEntity() instanceof Player) return;
+        if (!enabled) return;
         Player k = e.getEntity().getKiller();
         if (k == null) return;
-        Map<String, Integer> m = read(k.getInventory().getItemInMainHand());
+        ItemStack weapon = k.getInventory().getItemInMainHand();
+        Map<String, Integer> m = read(weapon);
         if (m.isEmpty()) return;
+        int bh = m.getOrDefault("behead", 0);
+        if (bh > 0 && rnd.nextDouble() < new double[]{0, 0.03, 0.06, 0.10}[Math.min(3, bh)]) {
+            ItemStack head = headOf(e.getEntity());
+            if (head != null) e.getDrops().add(head);
+        }
+        if (e.getEntity() instanceof Player) return;
         int w = m.getOrDefault("wisdom", 0);
         if (w > 0) e.setDroppedExp((int) Math.round(e.getDroppedExp() * (1 + 0.5 * w)));
-        if (m.containsKey("telekinesis")) {
+        if (on(weapon, m, "telekinesis")) {
             Iterator<ItemStack> it = e.getDrops().iterator();
             while (it.hasNext()) {
                 ItemStack st = it.next();
@@ -538,6 +591,177 @@ public final class CustomEnchantService implements Module, Listener {
                 else st.setAmount(left.values().iterator().next().getAmount());
             }
         }
+    }
+
+    /** Казнь: больше урона по ослабленным. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void execute(EntityDamageByEntityEvent e) {
+        if (!enabled || !(e.getDamager() instanceof Player p) || !(e.getEntity() instanceof LivingEntity v)) return;
+        int ex = level(p.getInventory().getItemInMainHand(), "execute");
+        if (ex <= 0) return;
+        var attr = v.getAttribute(Attribute.MAX_HEALTH);
+        double max = attr == null ? 20 : attr.getValue();
+        if (v.getHealth() / max < 0.30) e.setDamage(e.getDamage() * (1 + 0.10 * ex));
+    }
+
+    /** Стальная кожа: меньше входящего урона. Второе дыхание: регенерация при низком здоровье. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void defend(org.bukkit.event.entity.EntityDamageEvent e) {
+        if (!enabled || !(e.getEntity() instanceof Player p)) return;
+        int st = level(p.getInventory().getLeggings(), "steelskin");
+        if (st > 0) e.setDamage(e.getDamage() * (1 - 0.05 * st));
+    }
+
+    private final Map<UUID, Long> secondWindCd = new ConcurrentHashMap<>();
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void secondWind(org.bukkit.event.entity.EntityDamageEvent e) {
+        if (!enabled || !(e.getEntity() instanceof Player p)) return;
+        double after = p.getHealth() - e.getFinalDamage();
+        if (after <= 0 || after >= 8) return;
+        if (level(p.getInventory().getChestplate(), "secondwind") <= 0) return;
+        long now = System.currentTimeMillis();
+        Long cd = secondWindCd.get(p.getUniqueId());
+        if (cd != null && cd > now) return;
+        secondWindCd.put(p.getUniqueId(), now + 120_000);
+        Tasks.later(1, () -> {
+            if (!p.isOnline() || p.isDead()) return;
+            p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 1));
+            Msg.actionBar(p, "&a✦ Второе дыхание! &7(откат 2 мин)");
+            Msg.sound(p, Sound.ITEM_TOTEM_USE, 0.4f, 1.6f);
+        });
+    }
+
+    // Кровотечение: урон без источника, чтобы не срабатывали чары и метка боя повторно.
+    private final Map<UUID, int[]> bleeding = new ConcurrentHashMap<>();
+
+    private void startBleed(LivingEntity v, int seconds) {
+        int[] left = bleeding.get(v.getUniqueId());
+        if (left != null) { left[0] = Math.max(left[0], seconds); return; }
+        int[] st = {seconds};
+        bleeding.put(v.getUniqueId(), st);
+        org.bukkit.scheduler.BukkitTask[] t = new org.bukkit.scheduler.BukkitTask[1];
+        t[0] = Tasks.timer(20, 20, () -> {
+            if (st[0]-- <= 0 || !v.isValid() || v.isDead()) { bleeding.remove(v.getUniqueId()); t[0].cancel(); return; }
+            v.damage(1.0);
+            v.getWorld().spawnParticle(org.bukkit.Particle.BLOCK, v.getLocation().add(0, 1, 0), 8, 0.2, 0.3, 0.2,
+                    Material.REDSTONE_BLOCK.createBlockData());
+        });
+    }
+
+    /** Ледяная стрела: помечаем снаряд при выстреле. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void shoot(org.bukkit.event.entity.EntityShootBowEvent e) {
+        if (!enabled || !(e.getEntity() instanceof Player)) return;
+        int fl = level(e.getBow(), "frost");
+        if (fl > 0) e.getProjectile().getPersistentDataContainer().set(Keys.of("ce_frost"), PersistentDataType.INTEGER, fl);
+    }
+
+    /** Обезглавливание: голова жертвы. */
+    private static ItemStack headOf(LivingEntity v) {
+        if (v instanceof Player pl) {
+            ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+            if (head.getItemMeta() instanceof org.bukkit.inventory.meta.SkullMeta sm) { sm.setOwningPlayer(pl); head.setItemMeta(sm); }
+            return head;
+        }
+        return switch (v.getType()) {
+            case ZOMBIE -> new ItemStack(Material.ZOMBIE_HEAD);
+            case SKELETON -> new ItemStack(Material.SKELETON_SKULL);
+            case CREEPER -> new ItemStack(Material.CREEPER_HEAD);
+            case WITHER_SKELETON -> new ItemStack(Material.WITHER_SKELETON_SKULL);
+            case PIGLIN -> new ItemStack(Material.PIGLIN_HEAD);
+            case ENDER_DRAGON -> new ItemStack(Material.DRAGON_HEAD);
+            default -> null;
+        };
+    }
+
+    // ------------------------------------------------------------------ Невидимка
+
+    private final Map<UUID, Long> stealthUntil = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> stealthCd = new ConcurrentHashMap<>();
+    private static final EquipmentSlot[] VISIBLE = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
+            EquipmentSlot.HAND, EquipmentSlot.OFF_HAND};
+
+    /** Присесть с пустой рукой (чтобы не мешать колёсику на инструментах) — невидимость до 10 секунд. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void sneak(org.bukkit.event.player.PlayerToggleSneakEvent e) {
+        Player p = e.getPlayer();
+        if (!e.isSneaking()) { endStealth(p); return; }
+        if (!enabled || level(p.getInventory().getHelmet(), "stealth") <= 0) return;
+        if (!p.getInventory().getItemInMainHand().getType().isAir()) return;
+        long now = System.currentTimeMillis();
+        Long cd = stealthCd.get(p.getUniqueId());
+        if (cd != null && cd > now) { Msg.actionBar(p, "&7Невидимка перезаряжается: " + ((cd - now) / 1000 + 1) + " сек"); return; }
+        stealthUntil.put(p.getUniqueId(), now + 10_000);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 200, 0, true, false, true));
+        for (Player o : p.getWorld().getPlayers()) if (o != p) for (EquipmentSlot sl : VISIBLE) o.sendEquipmentChange(p, sl, new ItemStack(Material.AIR));
+        Msg.actionBar(p, "&8✦ Невидимка: вас не видно (до 10 сек)");
+        Tasks.later(200, () -> endStealth(p));
+    }
+
+    private void endStealth(Player p) {
+        if (stealthUntil.remove(p.getUniqueId()) == null) return;
+        p.removePotionEffect(PotionEffectType.INVISIBILITY);
+        stealthCd.put(p.getUniqueId(), System.currentTimeMillis() + 30_000);
+        if (!p.isOnline()) return;
+        for (Player o : p.getWorld().getPlayers()) if (o != p) for (EquipmentSlot sl : VISIBLE) o.sendEquipmentChange(p, sl, p.getEquipment().getItem(sl));
+        Msg.actionBar(p, "&7Невидимка закончилась (откат 30 сек)");
+    }
+
+    @EventHandler
+    public void quitStealth(org.bukkit.event.player.PlayerQuitEvent e) {
+        UUID u = e.getPlayer().getUniqueId();
+        stealthUntil.remove(u);
+        bleeding.remove(u);
+        secondWindCd.remove(u);
+    }
+
+    // ------------------------------------------------------------------ Рыбалка
+
+    private static final Material[] TREASURE = {Material.NAME_TAG, Material.SADDLE, Material.NAUTILUS_SHELL, Material.BOW,
+            Material.FISHING_ROD, Material.EXPERIENCE_BOTTLE, Material.GOLDEN_CARROT};
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void fish(org.bukkit.event.player.PlayerFishEvent e) {
+        if (!enabled) return;
+        Player p = e.getPlayer();
+        ItemStack rod = p.getInventory().getItemInMainHand();
+        if (rod.getType() != Material.FISHING_ROD) rod = p.getInventory().getItemInOffHand();
+        Map<String, Integer> m = read(rod);
+        if (m.isEmpty()) return;
+        int fisher = m.getOrDefault("fisher", 0);
+        if (e.getState() == org.bukkit.event.player.PlayerFishEvent.State.FISHING && fisher > 0) {
+            var hook = e.getHook();
+            double k = 1 - 0.2 * fisher;
+            hook.setMinWaitTime((int) Math.max(20, 100 * k));
+            hook.setMaxWaitTime((int) Math.max(40, 600 * k));
+        } else if (e.getState() == org.bukkit.event.player.PlayerFishEvent.State.CAUGHT_FISH && e.getCaught() instanceof Item caught) {
+            if (m.containsKey("bookfisher") && rnd.nextDouble() < bookChance) {
+                List<Ench> pool = new ArrayList<>();
+                for (Ench en : ALL.values()) if (!en.id().equals("bookfisher") && !en.id().equals("unbreakable")) pool.add(en);
+                Ench en = pool.get(rnd.nextInt(pool.size()));
+                caught.setItemStack(book(en, 1));
+                Msg.title(p, "&d✦ Улов!", "&fКнига особых чар: " + en.name(), 5, 50, 10);
+                plugin.logs().log(p, "items", "ce_fish_book", p.getLocation(), en.id());
+            } else if (fisher > 0 && rnd.nextDouble() < 0.05 * fisher) {
+                caught.setItemStack(new ItemStack(TREASURE[rnd.nextInt(TREASURE.length)]));
+                Msg.actionBar(p, "&6✦ Сокровище!");
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Неломайка
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void itemDamage(org.bukkit.event.player.PlayerItemDamageEvent e) {
+        if (!enabled || level(e.getItem(), "unbreakable") <= 0) return;
+        ItemStack it = e.getItem();
+        int max = it.getType().getMaxDurability();
+        if (max <= 0 || !(it.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable d)) return;
+        int left = max - d.getDamage();
+        if (left - e.getDamage() >= 1) return;
+        if (left <= 1) e.setCancelled(true); else e.setDamage(left - 1);
+        Msg.actionBar(e.getPlayer(), "&eНеломайка: предмет на последней прочности — почините его");
     }
 
     // ------------------------------------------------------------------ Эффекты: постоянные
@@ -549,6 +773,10 @@ public final class CustomEnchantService implements Module, Listener {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 400, 0, true, false, true));
             int spr = level(p.getInventory().getBoots(), "springs");
             if (spr > 0) p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 60, spr - 1, true, false, true));
+            for (ItemStack a : p.getInventory().getArmorContents()) {
+                if (level(a, "pyro") > 0) { p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 400, 0, true, false, true)); break; }
+            }
+            if (stealthUntil.containsKey(p.getUniqueId()) && level(p.getInventory().getHelmet(), "stealth") <= 0) endStealth(p);
             int haste = level(p.getInventory().getItemInMainHand(), "haste");
             if (haste > 0) p.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 60, haste - 1, true, false, true));
         }

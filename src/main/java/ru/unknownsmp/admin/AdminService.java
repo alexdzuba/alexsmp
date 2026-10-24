@@ -277,6 +277,11 @@ public final class AdminService implements Module, Listener {
             case "dump" -> dump(s, r);
             case "clanpoint", "clanpoints" -> { if (need(s, "usmp.admin.events") && plugin.points() != null) plugin.points().admin(s, r); }
             case "ench", "enchant" -> { if (need(s, "usmp.admin.items") && plugin.enchants() != null) plugin.enchants().admin(s, r); }
+            case "bounty" -> {
+                if (!need(s, "usmp.admin.economy") || plugin.bounties() == null) return;
+                if (r.length < 2) { Msg.error(s, "admin.bounty-usage", "Использование: /usmp bounty <игрок> <сумма> — награда от сервера"); return; }
+                plugin.bounties().placeServer(s, r[0], Text.parseAmount(r[1]));
+            }
             case "lag" -> { if (need(s, "usmp.admin.monitor") && plugin.lagGuard() != null) plugin.lagGuard().command(s, r); }
             case "dev" -> dev(s, r);
             case "auth" -> auth(s, r);
@@ -512,6 +517,7 @@ public final class AdminService implements Module, Listener {
                 {"usmp.admin.backup", "/usmp backup now | list | verify <имя> | restore <имя> [db,worlds,configs] | cancel"},
                 {"*", "/usmp role <игрок> <роль> — только владелец/консоль"},
                 {"usmp.admin.economy", "/usmp money give|take|set <игрок> <сумма>"},
+                {"usmp.admin.economy", "/usmp bounty <игрок> <сумма> — награда за голову от сервера (можно и за себя)"},
                 {"usmp.admin.items", "/usmp item give|potion <игрок> <id> | list"},
                 {"usmp.admin.npc", "/usmp npc create <id> <VILLAGER|MANNEQUIN|TRADER> [скин/профессия] | remove | move | list | name | dialogue | action | role"},
                 {"usmp.admin.events", "/usmp event start <meteor|cache|anomaly|merchant|secrets> | stop; /usmp nether|end open|close; /usmp nether resetcd"},
@@ -704,7 +710,7 @@ public final class AdminService implements Module, Listener {
 
     private List<String> tab(CommandSender s, String[] a) {
         if (a.length == 1) return new ArrayList<>(List.of("help", "reload", "status", "panel", "setup", "setspawn", "setlobby", "maintenance", "backup", "role", "money",
-                "item", "npc", "event", "nether", "end", "clanpoint", "ench", "lag", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
+                "item", "npc", "event", "nether", "end", "clanpoint", "ench", "lag", "bounty", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) return switch (sub) {
             case "backup" -> List.of("now", "list", "verify", "restore", "cancel");

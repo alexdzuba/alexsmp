@@ -95,6 +95,11 @@ public final class Migrations {
                     "CREATE TABLE IF NOT EXISTS clan_points (id TEXT PRIMARY KEY, world TEXT NOT NULL, x INTEGER, y INTEGER, z INTEGER, radius INTEGER, owner BIGINT DEFAULT 0, captured_at BIGINT DEFAULT 0)",
                     "CREATE TABLE IF NOT EXISTS money_stones (id {ID}, owner TEXT NOT NULL, tier TEXT NOT NULL, world TEXT NOT NULL, x INTEGER NOT NULL, y INTEGER NOT NULL, z INTEGER NOT NULL, placed_at BIGINT, earned BIGINT DEFAULT 0)",
                     "CREATE INDEX IF NOT EXISTS idx_stones_owner ON money_stones(owner)",
+            },
+            new String[]{
+                    // v6: загрузчики чанков игроков.
+                    "CREATE TABLE IF NOT EXISTS chunk_loaders (id {ID}, owner TEXT NOT NULL, world TEXT NOT NULL, x INTEGER NOT NULL, y INTEGER NOT NULL, z INTEGER NOT NULL, placed_at BIGINT)",
+                    "CREATE INDEX IF NOT EXISTS idx_loaders_owner ON chunk_loaders(owner)",
             }
     );
 
@@ -155,5 +160,5 @@ public final class Migrations {
             "clan_allies", "clan_bank_log", "wars", "war_blocks", "unique_items", "world_state", "quest_progress",
             "bounties", "event_history", "collective", "punishments", "reports", "block_log", "action_log", "parkour", "duel_stash", "sell_quota",
             "zhora_memory", "zhora_mute", "chronicle", "zhora_complaints", "zhora_cases", "zhora_evidence", "zhora_chat",
-            "clan_claims", "clan_points", "money_stones"};
+            "clan_claims", "clan_points", "money_stones", "chunk_loaders"};
 }

@@ -216,7 +216,10 @@ exploration:
 custom-enchants:
   enabled: true
   shop: true
-  max-per-item: 3
+  # Сколько особых чар может быть на одном предмете.
+  max-enchants-per-item: 5
+  # Шанс выловить книгу особых чар с «Опытным рыбаком» (0.005 = 0,5% за улов).
+  bookfisher-chance: 0.005
   timber-max-logs: 80
   prices:
     autosmelt: 60000
@@ -229,3 +232,16 @@ custom-enchants:
     springs: 20000
     haste: 40000
     wisdom: 25000
+    lucky: 50000
+    execute: 40000
+    poison: 30000
+    behead: 45000
+    bleed: 35000
+    frost: 30000
+    secondwind: 120000
+    steelskin: 50000
+    pyro: 250000
+    stealth: 150000
+    fisher: 25000
+    bookfisher: 100000
+    unbreakable: 400000

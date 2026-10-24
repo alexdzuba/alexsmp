@@ -74,6 +74,26 @@ public final class BountyService implements Module {
         }, null);
     }
 
+    /** Заказчик серверных наград (деньги из «казны», при истечении никому не возвращаются). */
+    public static final UUID SERVER = new UUID(0L, 0L);
+
+    /** Награда от сервера: /usmp bounty <игрок> <сумма>. Можно назначить и за администратора. */
+    public void placeServer(org.bukkit.command.CommandSender s, String targetName, long amount) {
+        if (amount < 1) { Msg.error(s, "admin.amount", "Неверная сумма."); return; }
+        Tasks.then(plugin.profiles().findUuid(targetName), target -> {
+            if (target == null) { Msg.error(s, "player.unknown", "Игрок не найден."); return; }
+            Tasks.then(plugin.db().tx(c -> {
+                String tn = Database.strVal(c, "SELECT name FROM players WHERE uuid=?", target.toString());
+                Database.insert(c, "INSERT INTO bounties(target, target_name, placer, placer_name, amount, created_at, state) VALUES (?,?,?,?,?,?,'ACTIVE')",
+                        target.toString(), tn == null ? targetName : tn, SERVER.toString(), "Сервер", amount, System.currentTimeMillis());
+                return tn == null ? targetName : tn;
+            }), name -> {
+                Msg.broadcast("bounty.placed-server", "&c☠ Сервер назначил награду &6{a}&c за голову &f{t}&c! Убейте его в PvP, чтобы забрать.", "t", name, "a", Text.money(amount));
+                plugin.logs().log(s instanceof Player p ? p : null, "admin", "bounty_server", null, name + " " + amount);
+            }, err -> Msg.error(s, "bounty.error", "Ошибка: {e}", "e", err.getMessage()));
+        }, null);
+    }
+
     public void onKill(Player killer, Player victim) {
         var kc = plugin.clans().clanOf(killer);
         var vc = plugin.clans().clanOf(victim);
@@ -111,7 +131,8 @@ public final class BountyService implements Module {
             try (PreparedStatement ps = Database.ps(c, "SELECT id, placer, amount FROM bounties WHERE state='ACTIVE' AND created_at < ?", before); ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ids.add(rs.getLong(1));
-                    refunds.merge(UUID.fromString(rs.getString(2)), rs.getLong(3), Long::sum);
+                    UUID placer = UUID.fromString(rs.getString(2));
+                    if (!placer.equals(SERVER)) refunds.merge(placer, rs.getLong(3), Long::sum);
                 }
             }
             for (long id : ids) Database.update(c, "UPDATE bounties SET state='EXPIRED' WHERE id=?", id);

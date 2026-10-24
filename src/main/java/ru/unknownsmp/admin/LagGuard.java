@@ -274,6 +274,7 @@ public final class LagGuard implements Module, Listener {
         int fz = 0;
         for (Map<Long, Long> m : frozen.values()) fz += m.size();
         if (fz > 0) Msg.raw(s, "&cЗаморожено чанков с редстоуном: " + fz + " &7(/usmp lag unfreeze)");
+        if (plugin.chunkLoaders() != null) Msg.raw(s, "&7Чанков держат загрузчики игроков: &f" + plugin.chunkLoaders().heldChunks());
         if (s instanceof Player p) {
             lastReport.put(p.getUniqueId(), refs);
             if (!refs.isEmpty()) Msg.raw(s, "&7Телепорт: &e/usmp lag tp <номер>");

@@ -103,7 +103,7 @@ public final class CustomEnchantService implements Module, Listener {
         reg(new Ench("telekinesis", "Телекинез", 1, Target.TOOL, 40_000, "Добыча и лут с мобов сразу в инвентарь"));
         reg(new Ench("drill", "Бур", 1, Target.DIGGER, 150_000, "Копает область 3×3. Режим: присесть + колёсико"));
         reg(new Ench("timber", "Лесоруб", 1, Target.AXE, 80_000, "Срубает дерево целиком"));
-        reg(new Ench("vampire", "Вампиризм", 3, Target.WEAPON, 30_000, "Лечит на 5% урона за уровень"));
+        reg(new Ench("vampire", "Вампиризм", 3, Target.WEAPON, 30_000, "Лечит на 10% нанесённого урона за уровень"));
         reg(new Ench("thunder", "Громовержец", 2, Target.SWORD, 50_000, "Шанс 6% за уровень ударить молнией"));
         reg(new Ench("nightvision", "Ночное зрение", 1, Target.HELMET, 25_000, "Постоянное ночное зрение"));
         reg(new Ench("springs", "Пружины", 2, Target.BOOTS, 20_000, "Прыжок выше"));
@@ -162,6 +162,7 @@ public final class CustomEnchantService implements Module, Listener {
     private double bookChance = 0.005;
     private double robberPercent = 0.02;
     private long robberCap = 250_000;
+    private double vampirePercent = 0.10;
     private final Map<String, Long> prices = new ConcurrentHashMap<>();
 
     public CustomEnchantService(UnknownSMP plugin) {
@@ -188,6 +189,7 @@ public final class CustomEnchantService implements Module, Listener {
         bookChance = Math.max(0, Math.min(1, c.getDouble("custom-enchants.bookfisher-chance", 0.005)));
         robberPercent = Math.max(0, Math.min(100, c.getDouble("custom-enchants.robber-percent", 2))) / 100.0;
         robberCap = Math.max(0, c.getLong("custom-enchants.robber-max", 250_000));
+        vampirePercent = Math.max(0, Math.min(100, c.getDouble("custom-enchants.vampire-percent-per-level", 10))) / 100.0;
         timberMax = Math.max(8, Math.min(256, c.getInt("custom-enchants.timber-max-logs", 80)));
         prices.clear();
         for (Ench e : ALL.values()) prices.put(e.id(), Math.max(1, c.getLong("custom-enchants.prices." + e.id(), e.basePrice())));
@@ -572,7 +574,7 @@ public final class CustomEnchantService implements Module, Listener {
         if (vamp > 0) {
             var attr = p.getAttribute(Attribute.MAX_HEALTH);
             double max = attr == null ? 20 : attr.getValue();
-            p.setHealth(Math.min(max, p.getHealth() + e.getFinalDamage() * 0.05 * vamp));
+            p.setHealth(Math.min(max, p.getHealth() + e.getFinalDamage() * vampirePercent * vamp));
         }
         int thunder = m.getOrDefault("thunder", 0);
         if (thunder > 0 && rnd.nextDouble() < 0.06 * thunder) {

@@ -59,6 +59,13 @@ public final class ChunkLoaderService implements Module, Listener {
     private boolean enabled = true;
     private long price = 1_000_000;
     private int maxPerPlayer = 2, radius = 1;
+    private boolean activateSpawners = true;
+    private int spawnerAreaCap = 40;
+    /** Спавнеры в зонах загрузчиков: ключ блока -> тиков до следующего спавна. */
+    private final Map<String, Integer> spawnerTimers = new HashMap<>();
+    private final java.util.Random rnd = new java.util.Random();
+    private int rescanIn = 0;
+    private java.util.List<Block> spawnerBlocks = new java.util.ArrayList<>();
 
     public ChunkLoaderService(UnknownSMP plugin) {
         this.plugin = plugin;
@@ -83,6 +90,7 @@ public final class ChunkLoaderService implements Module, Listener {
         for (Loader l : loaders.values()) hold(l, true);
         Bukkit.getPluginManager().registerEvents(this, plugin);
         Tasks.timer(100, 100, this::particles);
+        Tasks.timer(40, 20, this::tickSpawners);
         plugin.getLogger().info("Загрузчики чанков: " + loaders.size() + ".");
     }
 
@@ -98,6 +106,8 @@ public final class ChunkLoaderService implements Module, Listener {
         price = Math.max(1, c.getLong("chunk-loaders.price", 1_000_000));
         maxPerPlayer = Math.max(1, c.getInt("chunk-loaders.max-per-player", 2));
         radius = Math.max(0, Math.min(2, c.getInt("chunk-loaders.radius-chunks", 1)));
+        activateSpawners = c.getBoolean("chunk-loaders.activate-spawners", true);
+        spawnerAreaCap = Math.max(1, c.getInt("chunk-loaders.spawner-area-cap", 40));
     }
 
     public long price() { return price; }
@@ -137,13 +147,104 @@ public final class ChunkLoaderService implements Module, Listener {
 
     private Loader at(Block b) { return loaders.get(b.getWorld().getName() + ":" + b.getX() + ":" + b.getY() + ":" + b.getZ()); }
 
+    // ------------------------------------------------------------------ Спавнеры без игроков
+
+    /**
+     * Спавнер в Minecraft работает, только если игрок ближе 16 блоков. Внутри зоны загрузчика
+     * спавнеры работают и без игроков: раз в секунду считаем им таймер и спавним мобов сами,
+     * по их же настройкам (задержка, количество, радиус, лимит мобов рядом).
+     * Когда игрок рядом — работает обычный спавнер, мы не вмешиваемся.
+     */
+    private void tickSpawners() {
+        if (!enabled || !activateSpawners || loaders.isEmpty()) { spawnerTimers.clear(); spawnerBlocks.clear(); return; }
+        if (--rescanIn <= 0) { rescanIn = 30; rescanSpawners(); }
+        java.util.Set<String> alive = new java.util.HashSet<>();
+        for (Block b : spawnerBlocks) {
+            if (!b.getWorld().isChunkLoaded(b.getX() >> 4, b.getZ() >> 4)) continue;
+            if (b.getType() != Material.SPAWNER || !(b.getState(false) instanceof org.bukkit.block.CreatureSpawner cs)) continue;
+            org.bukkit.entity.EntityType type = cs.getSpawnedType();
+            if (type == null || !type.isSpawnable() || !type.isAlive()) continue;
+            String key = b.getWorld().getName() + ":" + b.getX() + ":" + b.getY() + ":" + b.getZ();
+            alive.add(key);
+            org.bukkit.Location center = b.getLocation().add(0.5, 0.5, 0.5);
+            // Игрок рядом — спавнер работает сам.
+            if (!center.getNearbyPlayers(Math.max(1, cs.getRequiredPlayerRange())).isEmpty()) { spawnerTimers.remove(key); continue; }
+            if (b.getWorld().getDifficulty() == org.bukkit.Difficulty.PEACEFUL
+                    && org.bukkit.entity.Enemy.class.isAssignableFrom(type.getEntityClass())) continue;
+            int left = spawnerTimers.getOrDefault(key, nextDelay(cs)) - 20;
+            if (left > 0) { spawnerTimers.put(key, left); continue; }
+            spawnerTimers.put(key, nextDelay(cs));
+            spawnAround(b, cs, type);
+        }
+        spawnerTimers.keySet().retainAll(alive);
+    }
+
+    private int nextDelay(org.bukkit.block.CreatureSpawner cs) {
+        int min = Math.max(20, cs.getMinSpawnDelay()), max = Math.max(min, cs.getMaxSpawnDelay());
+        return min + rnd.nextInt(max - min + 1);
+    }
+
+    private void rescanSpawners() {
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        java.util.List<Block> found = new java.util.ArrayList<>();
+        for (Loader l : loaders.values()) {
+            World w = Bukkit.getWorld(l.world());
+            if (w == null) continue;
+            int bx = l.x() >> 4, bz = l.z() >> 4;
+            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
+                int cx = bx + dx, cz = bz + dz;
+                if (!seen.add(ck(cx, cz) ^ ((long) w.getName().hashCode() << 16)) || !w.isChunkLoaded(cx, cz)) continue;
+                for (org.bukkit.block.BlockState st : w.getChunkAt(cx, cz).getTileEntities(b -> b.getType() == Material.SPAWNER, false)) {
+                    found.add(st.getBlock());
+                }
+            }
+        }
+        spawnerBlocks = found;
+    }
+
+    private void spawnAround(Block b, org.bukkit.block.CreatureSpawner cs, org.bukkit.entity.EntityType type) {
+        World w = b.getWorld();
+        int range = Math.max(1, cs.getSpawnRange());
+        Class<? extends org.bukkit.entity.Entity> cls = type.getEntityClass();
+        if (cls == null) return;
+        org.bukkit.Location center = b.getLocation().add(0.5, 0.5, 0.5);
+        int nearby = 0;
+        for (org.bukkit.entity.Entity en : w.getNearbyEntities(center, range + 0.5, range + 0.5, range + 0.5)) if (en.getType() == type) nearby++;
+        // Мобы из загрузчика не исчезают сами, поэтому держим общий лимит в радиусе 24 блоков.
+        int area = 0;
+        for (org.bukkit.entity.Entity en : w.getNearbyEntities(center, 24, 24, 24)) if (en.getType() == type) area++;
+        if (area >= spawnerAreaCap) return;
+        int count = Math.max(1, cs.getSpawnCount());
+        int cap = Math.max(1, cs.getMaxNearbyEntities());
+        int spawned = 0;
+        for (int i = 0; i < count && nearby < cap && area + spawned < spawnerAreaCap; i++) {
+            for (int attempt = 0; attempt < 4; attempt++) {
+                int x = b.getX() + rnd.nextInt(range * 2 + 1) - range;
+                int y = b.getY() + rnd.nextInt(3) - 1;
+                int z = b.getZ() + rnd.nextInt(range * 2 + 1) - range;
+                Block feet = w.getBlockAt(x, y, z);
+                if (!feet.isPassable() || !feet.getRelative(org.bukkit.block.BlockFace.UP).isPassable()) continue;
+                org.bukkit.Location at = new org.bukkit.Location(w, x + 0.5, y, z + 0.5, rnd.nextFloat() * 360f, 0f);
+                org.bukkit.entity.Entity en = w.spawn(at, cls, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER,
+                        e -> {
+                            e.getPersistentDataContainer().set(Keys.of("spawner"), PersistentDataType.BYTE, (byte) 1);
+                            // Иначе моб исчезнет сразу: рядом нет игрока, а дальний игрок в мире вызывает деспавн.
+                            if (e instanceof org.bukkit.entity.LivingEntity le) le.setRemoveWhenFarAway(false);
+                        });
+                if (en != null && en.isValid()) { nearby++; spawned++; }
+                break;
+            }
+        }
+        if (spawned > 0) w.spawnParticle(Particle.FLAME, center, 12, 0.4, 0.4, 0.4, 0.01);
+    }
+
     // ------------------------------------------------------------------ Предмет
 
     public ItemStack item() {
         int side = radius * 2 + 1;
         ItemStack it = Items.of(Material.LODESTONE).name("&5&lЗагрузчик чанков")
                 .lore("&7Держит загруженной область " + side + "×" + side + " чанков вокруг себя,", "&7даже когда рядом никого нет:",
-                        "&7воронки, печи и редстоун работают.", "", "&8Не больше " + maxPerPlayer + " на игрока. Снять может только владелец.").glow().build();
+                        "&7воронки, печи, редстоун и спавнеры работают.", "", "&8Не больше " + maxPerPlayer + " на игрока. Снять может только владелец.").glow().build();
         ItemMeta meta = it.getItemMeta();
         meta.getPersistentDataContainer().remove(Keys.MENU_ITEM);
         meta.getPersistentDataContainer().set(Keys.of("chunk_loader"), PersistentDataType.BYTE, (byte) 1);

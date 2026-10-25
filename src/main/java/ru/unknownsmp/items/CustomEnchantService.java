@@ -1117,6 +1117,8 @@ public final class CustomEnchantService implements Module, Listener {
     // ------------------------------------------------------------------ Админ: /usmp ench
 
     /** Набор бога: незеритовые меч, кирка, топор и броня со всеми обычными и особыми чарами максимального уровня. */
+    private static final Set<String> GOD_EXCLUDE = Set.of("telekinesis", "springs");
+
     public static List<ItemStack> godSet() {
         Object[][] parts = {
                 {Material.NETHERITE_SWORD, "Меч бога"}, {Material.NETHERITE_PICKAXE, "Кирка бога"}, {Material.NETHERITE_AXE, "Топор бога"},
@@ -1132,11 +1134,16 @@ public final class CustomEnchantService implements Module, Listener {
                 if (e.isCursed() || !e.canEnchantItem(it)) continue;
                 // Шёлковое касание отменяет Удачу — на инструментах бога оставляем Удачу.
                 if (e.equals(org.bukkit.enchantments.Enchantment.SILK_TOUCH)) continue;
+                if (e.equals(org.bukkit.enchantments.Enchantment.FROST_WALKER)) continue; // без Ледохода
                 meta.addEnchant(e, e.getMaxLevel(), true);
             }
             it.setItemMeta(meta);
             Map<String, Integer> custom = new LinkedHashMap<>();
-            for (Ench en : ALL.values()) if (en.target().fits(it.getType())) custom.put(en.id(), en.max());
+            for (Ench en : ALL.values()) {
+                // Без Телекинеза (магнит) и Пружин (прыжки).
+                if (GOD_EXCLUDE.contains(en.id())) continue;
+                if (en.target().fits(it.getType())) custom.put(en.id(), en.max());
+            }
             if (!custom.isEmpty()) write(it, custom);
             out.add(it);
         }

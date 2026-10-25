@@ -125,7 +125,7 @@ public final class CustomEnchantService implements Module, Listener {
         reg(new Ench("autorepair", "Автопочинка", 2, Target.ANY, 120_000, "Чинится на 1/2 ед. прочности каждые 5 сек, пока в инвентаре"));
         reg(new Ench("blind", "Ослепление", 2, Target.SWORD, 30_000, "Шанс 10% за уровень ослепить цель на 2 сек"));
         reg(new Ench("nighthunter", "Ночной охотник", 3, Target.SWORD, 30_000, "+5% урона за уровень ночью"));
-        reg(new Ench("robber", "Грабитель", 1, Target.SWORD, 200_000, "Убийство игрока забирает 2% его баланса; вагонетки, лодки, стойки и рамки ломаются с одного удара"));
+        reg(new Ench("robber", "Грабитель", 1, Target.SWORD, 200_000, "Убийство игрока забирает 2% его баланса; один удар ломает все вагонетки, лодки, стойки и рамки в зоне 3x3 вокруг цели"));
         reg(new Ench("berserk", "Берсерк", 1, Target.CHESTPLATE, 100_000, "Ниже 5 сердец — Сила I на 8 сек (откат 1 мин)"));
         reg(new Ench("fireaura", "Огненная аура", 1, Target.CHESTPLATE, 60_000, "Поджигает того, кто бьёт вас вблизи"));
         reg(new Ench("steadfast", "Стойкость", 2, Target.LEGGINGS, 40_000, "−25% отбрасывания за уровень"));
@@ -162,6 +162,7 @@ public final class CustomEnchantService implements Module, Listener {
     private double bookChance = 0.005;
     private double robberPercent = 0.02;
     private long robberCap = 250_000;
+    private int robberSweepMax = 2000;
     private double vampirePercent = 0.10;
     private final Map<String, Long> prices = new ConcurrentHashMap<>();
 
@@ -189,6 +190,7 @@ public final class CustomEnchantService implements Module, Listener {
         bookChance = Math.max(0, Math.min(1, c.getDouble("custom-enchants.bookfisher-chance", 0.005)));
         robberPercent = Math.max(0, Math.min(100, c.getDouble("custom-enchants.robber-percent", 2))) / 100.0;
         robberCap = Math.max(0, c.getLong("custom-enchants.robber-max", 250_000));
+        robberSweepMax = Math.max(1, c.getInt("custom-enchants.robber-sweep-max", 2000));
         vampirePercent = Math.max(0, Math.min(100, c.getDouble("custom-enchants.vampire-percent-per-level", 10))) / 100.0;
         timberMax = Math.max(8, Math.min(256, c.getInt("custom-enchants.timber-max-logs", 80)));
         prices.clear();
@@ -682,39 +684,118 @@ public final class CustomEnchantService implements Module, Listener {
                 || pdc.has(Keys.LOBBY_ENTITY) || pdc.has(Keys.TROLL_ENTITY);
     }
 
+    private static boolean robberTarget(org.bukkit.entity.Entity en) {
+        if (en instanceof org.bukkit.entity.ArmorStand as) return !as.isMarker();
+        if (en instanceof org.bukkit.entity.ItemFrame fr) return !fr.isFixed();
+        return en instanceof org.bukkit.entity.Minecart || en instanceof org.bukkit.entity.Boat;
+    }
+
+    private boolean robberHand(Player p) {
+        return enabled && level(p.getInventory().getItemInMainHand(), "robber") > 0;
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void robberVehicle(org.bukkit.event.vehicle.VehicleDamageEvent e) {
-        if (!enabled || !(e.getAttacker() instanceof Player p)) return;
-        if (level(p.getInventory().getItemInMainHand(), "robber") <= 0 || pluginEntity(e.getVehicle())) return;
-        e.setDamage(1000);
+        if (!(e.getAttacker() instanceof Player p) || !robberHand(p)) return;
+        if (!robberTarget(e.getVehicle()) || pluginEntity(e.getVehicle())) return;
+        e.setCancelled(true);
+        robberSweep(p, e.getVehicle());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void robberEntity(EntityDamageByEntityEvent e) {
-        if (!enabled || !(e.getDamager() instanceof Player p)) return;
+        if (!(e.getDamager() instanceof Player p) || !robberHand(p)) return;
         org.bukkit.entity.Entity en = e.getEntity();
         if (!(en instanceof org.bukkit.entity.ArmorStand) && !(en instanceof org.bukkit.entity.ItemFrame)) return;
-        if (level(p.getInventory().getItemInMainHand(), "robber") <= 0 || pluginEntity(en)) return;
-        org.bukkit.Location at = en.getLocation();
+        if (!robberTarget(en) || pluginEntity(en)) return;
+        e.setCancelled(true);
+        robberSweep(p, en);
+    }
+
+    /** Пустая рамка ломается через HangingBreak, а не через урон. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void robberHanging(org.bukkit.event.hanging.HangingBreakByEntityEvent e) {
+        if (!(e.getRemover() instanceof Player p) || !robberHand(p)) return;
+        if (!(e.getEntity() instanceof org.bukkit.entity.ItemFrame fr) || !robberTarget(fr) || pluginEntity(fr)) return;
+        e.setCancelled(true);
+        robberSweep(p, fr);
+    }
+
+    /**
+     * Ломает за один удар всё в зоне 3x3 вокруг цели (по высоте ±2): стойки, рамки, вагонетки и лодки,
+     * сколько бы их ни было настакано. Чужой приват клана уважается для каждой сущности.
+     */
+    private void robberSweep(Player p, org.bukkit.entity.Entity hit) {
+        org.bukkit.Location at = hit.getLocation();
+        org.bukkit.Location center = new org.bukkit.Location(at.getWorld(), at.getBlockX() + 0.5, at.getY(), at.getBlockZ() + 0.5);
+        boolean drop = p.getGameMode() != org.bukkit.GameMode.CREATIVE;
+        var claims = plugin.claims();
         List<ItemStack> drops = new ArrayList<>();
+        int broken = 0;
+        List<org.bukkit.entity.Entity> found = new ArrayList<>(center.getWorld().getNearbyEntities(center, 1.5, 2, 1.5, CustomEnchantService::robberTarget));
+        if (!found.contains(hit)) found.add(hit);
+        for (org.bukkit.entity.Entity en : found) {
+            if (!en.isValid() || pluginEntity(en)) continue;
+            if (claims != null && !claims.canTouchEntity(p, en.getLocation())) continue;
+            if (broken >= robberSweepMax) break;
+            collectDrops(en, drops);
+            en.eject();
+            en.remove();
+            broken++;
+        }
+        if (broken == 0) return;
+        if (drop) for (ItemStack d : merge(drops)) center.getWorld().dropItemNaturally(center, d);
+        center.getWorld().playSound(center, Sound.ENTITY_ARMOR_STAND_BREAK, 1f, 1f);
+        if (broken > 1) {
+            center.getWorld().playSound(center, Sound.ENTITY_ITEM_BREAK, 1f, 0.7f);
+            Msg.actionBar(p, Msg.t("ench.robber-sweep", "&6Грабитель: &fсломано &e{n}&f за один удар", "n", String.valueOf(broken)));
+        }
+        if (broken >= 5) plugin.logs().log(p, "items", "robber_sweep", center, String.valueOf(broken));
+    }
+
+    private static void collectDrops(org.bukkit.entity.Entity en, List<ItemStack> out) {
+        if (en instanceof org.bukkit.inventory.InventoryHolder h) {
+            for (ItemStack it : h.getInventory().getContents()) if (it != null && !it.getType().isAir()) out.add(it.clone());
+            h.getInventory().clear();
+        }
         if (en instanceof org.bukkit.entity.ArmorStand as) {
-            if (as.isMarker()) return;
             for (EquipmentSlot sl : EquipmentSlot.values()) {
                 try {
                     ItemStack it = as.getEquipment().getItem(sl);
-                    if (it != null && !it.getType().isAir()) drops.add(it);
+                    if (it != null && !it.getType().isAir()) out.add(it.clone());
                 } catch (IllegalArgumentException ignored) { /* слот не поддерживается стойкой */ }
             }
-            drops.add(new ItemStack(Material.ARMOR_STAND));
+            out.add(new ItemStack(Material.ARMOR_STAND));
         } else if (en instanceof org.bukkit.entity.ItemFrame fr) {
-            if (fr.isFixed()) return;
-            if (!fr.getItem().getType().isAir()) drops.add(fr.getItem());
-            drops.add(new ItemStack(fr instanceof org.bukkit.entity.GlowItemFrame ? Material.GLOW_ITEM_FRAME : Material.ITEM_FRAME));
+            if (!fr.getItem().getType().isAir()) out.add(fr.getItem().clone());
+            out.add(new ItemStack(fr instanceof org.bukkit.entity.GlowItemFrame ? Material.GLOW_ITEM_FRAME : Material.ITEM_FRAME));
+        } else {
+            // Вагонетки и лодки: тип сущности совпадает с названием предмета (OAK_BOAT, HOPPER_MINECART, BAMBOO_RAFT...).
+            Material m = Material.matchMaterial(en.getType().name());
+            if (m != null && m.isItem() && m != Material.COMMAND_BLOCK_MINECART) out.add(new ItemStack(m));
         }
-        e.setCancelled(true);
-        en.remove();
-        if (p.getGameMode() != org.bukkit.GameMode.CREATIVE) for (ItemStack d : drops) at.getWorld().dropItemNaturally(at, d);
-        at.getWorld().playSound(at, Sound.ENTITY_ARMOR_STAND_BREAK, 1f, 1f);
+    }
+
+    /** Склеивает одинаковые предметы, чтобы сотня стоек не превратилась в сотню отдельных дропов. */
+    private static List<ItemStack> merge(List<ItemStack> in) {
+        List<ItemStack> out = new ArrayList<>();
+        for (ItemStack it : in) {
+            int left = it.getAmount();
+            for (ItemStack o : out) {
+                if (left <= 0) break;
+                if (!o.isSimilar(it)) continue;
+                int add = Math.min(left, o.getMaxStackSize() - o.getAmount());
+                if (add > 0) { o.setAmount(o.getAmount() + add); left -= add; }
+            }
+            while (left > 0) {
+                ItemStack c = it.clone();
+                int n = Math.min(left, Math.max(1, c.getMaxStackSize()));
+                c.setAmount(n);
+                out.add(c);
+                left -= n;
+            }
+        }
+        return out;
     }
 
     /** Грабитель: часть баланса убитого игрока переходит убийце (не в дуэлях и не между соклановцами). */

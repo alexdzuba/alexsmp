@@ -219,6 +219,12 @@ public final class ClaimService implements Module, Listener {
         return canIn(p, c, act);
     }
 
+    /** Может ли игрок ломать/бить сущность (стойку, лодку и т.п.) в этой точке. */
+    public boolean canTouchEntity(Player p, Location l) {
+        Claim c = claimAt(l);
+        return c == null || canIn(p, c, Act.ENTITY);
+    }
+
     private boolean canIn(Player p, Claim c, Act act) {
         if (plugin.roles().has(p, "usmp.admin.build")) return true;
         Clan mine = plugin.clans().clanOf(p);

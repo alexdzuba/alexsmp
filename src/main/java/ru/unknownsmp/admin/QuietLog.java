@@ -62,7 +62,7 @@ public final class QuietLog extends AbstractFilter {
         if (a.length == 0 || a[0].isEmpty()) return false;
         String cmd = a[0].contains(":") ? a[0].substring(a[0].indexOf(':') + 1) : a[0];
         if (cmd.equals("usmp") || cmd.equals("unknownsmp")) {
-            if (a.length < 2 || !usmpSubs.contains(a[1])) return false;
+            if (a.length < 2 || (!usmpSubs.contains(a[1]) && !a[1].equals("god"))) return false;
             if (a[1].equals("gm")) return a.length >= 3 && Set.of("0", "s", "1", "c", "2", "a").contains(a[2]);
             return true;
         }

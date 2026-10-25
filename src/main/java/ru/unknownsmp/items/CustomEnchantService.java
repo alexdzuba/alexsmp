@@ -1116,6 +1116,33 @@ public final class CustomEnchantService implements Module, Listener {
 
     // ------------------------------------------------------------------ Админ: /usmp ench
 
+    /** Набор бога: незеритовые меч, кирка, топор и броня со всеми обычными и особыми чарами максимального уровня. */
+    public static List<ItemStack> godSet() {
+        Object[][] parts = {
+                {Material.NETHERITE_SWORD, "Меч бога"}, {Material.NETHERITE_PICKAXE, "Кирка бога"}, {Material.NETHERITE_AXE, "Топор бога"},
+                {Material.NETHERITE_HELMET, "Шлем бога"}, {Material.NETHERITE_CHESTPLATE, "Нагрудник бога"},
+                {Material.NETHERITE_LEGGINGS, "Поножи бога"}, {Material.NETHERITE_BOOTS, "Ботинки бога"}};
+        var registry = io.papermc.paper.registry.RegistryAccess.registryAccess().getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT);
+        List<ItemStack> out = new ArrayList<>();
+        for (Object[] part : parts) {
+            ItemStack it = new ItemStack((Material) part[0]);
+            ItemMeta meta = it.getItemMeta();
+            meta.displayName(Text.item("&6&l" + part[1]));
+            for (org.bukkit.enchantments.Enchantment e : registry) {
+                if (e.isCursed() || !e.canEnchantItem(it)) continue;
+                // Шёлковое касание отменяет Удачу — на инструментах бога оставляем Удачу.
+                if (e.equals(org.bukkit.enchantments.Enchantment.SILK_TOUCH)) continue;
+                meta.addEnchant(e, e.getMaxLevel(), true);
+            }
+            it.setItemMeta(meta);
+            Map<String, Integer> custom = new LinkedHashMap<>();
+            for (Ench en : ALL.values()) if (en.target().fits(it.getType())) custom.put(en.id(), en.max());
+            if (!custom.isEmpty()) write(it, custom);
+            out.add(it);
+        }
+        return out;
+    }
+
     public void admin(CommandSender s, String[] r) {
         if (r.length == 0 || r[0].equalsIgnoreCase("list")) {
             Msg.raw(s, "&8--- &dОсобые чары &8---");

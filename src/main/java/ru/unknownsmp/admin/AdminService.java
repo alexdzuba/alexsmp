@@ -286,6 +286,15 @@ public final class AdminService implements Module, Listener {
             case "dev" -> dev(s, r);
             case "auth" -> auth(s, r);
             case "lookup" -> lookup(s, r);
+            case "god" -> {
+                if (!need(s, "usmp.admin.items")) return;
+                if (r.length < 1 || !r[0].equalsIgnoreCase("set")) { Msg.error(s, "admin.god-usage", "Использование: /usmp god set [игрок]"); return; }
+                Player t = r.length > 1 ? Bukkit.getPlayerExact(r[1]) : (s instanceof Player sp ? sp : null);
+                if (t == null) { Msg.error(s, "player.offline", "Игрок не в сети."); return; }
+                for (ItemStack it : ru.unknownsmp.items.CustomEnchantService.godSet()) plugin.mail().giveOrMail(t, it, "admin");
+                Msg.ok(s, "admin.god-given", "Набор бога выдан: {p}.", "p", t.getName());
+                plugin.logs().log(s instanceof Player p ? p : null, "admin", "give_god", null, t.getName());
+            }
             case "inv", "snapshots" -> { if (need(s, "usmp.mod.invsee") && plugin.snapshots() != null) plugin.snapshots().command(s, r); }
             case "broadcast", "bc" -> {
                 if (!need(s, "usmp.admin.broadcast") || r.length == 0) return;
@@ -531,6 +540,7 @@ public final class AdminService implements Module, Listener {
                 {"usmp.mod.tp", "/usmp tp <игрок>"},
                 {"usmp.mod.invsee", "/usmp invsee|endersee <игрок>"},
                 {"usmp.mod.invsee", "/usmp inv <игрок> — снимки инвентаря: посмотреть и вернуть вещи"},
+                {"usmp.admin.items", "/usmp god set [игрок] — набор бога (меч, кирка, топор, броня, все чары на максимум)"},
                 {"usmp.admin.auth", "/usmp auth reset|unlock|unregister|revoke <ник>"},
                 {"usmp.mod.logs", "/usmp lookup <игрок> [категория] [время]"},
                 {"usmp.admin.broadcast", "/usmp bc <текст>"},
@@ -712,10 +722,11 @@ public final class AdminService implements Module, Listener {
 
     private List<String> tab(CommandSender s, String[] a) {
         if (a.length == 1) return new ArrayList<>(List.of("help", "reload", "status", "panel", "setup", "setspawn", "setlobby", "maintenance", "backup", "role", "money",
-                "item", "npc", "event", "nether", "end", "clanpoint", "ench", "lag", "bounty", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "inv", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
+                "item", "npc", "event", "nether", "end", "clanpoint", "ench", "lag", "bounty", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "inv", "god", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) return switch (sub) {
             case "backup" -> List.of("now", "list", "verify", "restore", "cancel");
+            case "god" -> List.of("set");
             case "money" -> List.of("give", "take", "set");
             case "item" -> List.of("give", "potion", "list");
             case "npc" -> List.of("create", "remove", "move", "list", "name", "dialogue", "action", "role", "skin");

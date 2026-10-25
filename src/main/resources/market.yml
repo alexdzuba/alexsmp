@@ -7,9 +7,9 @@
 # ============================================================
 
 # Версия файла. Если в новой версии плагина число больше, старый файл сохраняется как market.yml.old-v… и заменяется.
-config-version: 10
+config-version: 11
 # При обновлении версии у существующего файла меняются только эти ключи, остальные настройки сохраняются.
-upgrade-overwrite: [pricing.buy-markup, sell.volume-decay, shop.always-buyable]
+upgrade-overwrite: [pricing.buy-markup, sell.volume-decay, shop.always-buyable, shop.blacklist]
 
 pricing:
   # Цена в магазине = стоимость × buy-markup
@@ -50,10 +50,10 @@ shop:
   blacklist: [TOTEM_OF_UNDYING, ENCHANTED_GOLDEN_APPLE, GOLDEN_APPLE, ENDER_PEARL, ENDER_EYE, EXPERIENCE_BOTTLE,
     TNT, TNT_MINECART, END_CRYSTAL, RESPAWN_ANCHOR, SPONGE, WET_SPONGE, HEART_OF_THE_SEA, CONDUIT, TRIDENT,
     NAUTILUS_SHELL, ECHO_SHARD, RECOVERY_COMPASS, SNIFFER_EGG, TRIAL_KEY, OMINOUS_TRIAL_KEY, HEAVY_CORE, MACE,
-    BREEZE_ROD, WIND_CHARGE, ENCHANTED_BOOK, SADDLE, NAME_TAG, ELYTRA, BEACON, OBSIDIAN, CRYING_OBSIDIAN]
+    BREEZE_ROD, WIND_CHARGE, ENCHANTED_BOOK, SADDLE, NAME_TAG, ELYTRA, BEACON, CRYING_OBSIDIAN]
 
   # Всегда в продаже, даже если предмет из Незера/Энда или «премиум» (метки выше на них не действуют).
-  always-buyable: [QUARTZ, OBSERVER, SOUL_SAND, EXPERIENCE_BOTTLE]
+  always-buyable: [QUARTZ, OBSERVER, SOUL_SAND, EXPERIENCE_BOTTLE, OBSIDIAN]
 
 # Книги чар в магазине (раздел «Книги чар» в /shop). Проклятия не продаются.
 enchant-books:

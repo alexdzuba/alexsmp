@@ -286,6 +286,7 @@ public final class AdminService implements Module, Listener {
             case "dev" -> dev(s, r);
             case "auth" -> auth(s, r);
             case "lookup" -> lookup(s, r);
+            case "inv", "snapshots" -> { if (need(s, "usmp.mod.invsee") && plugin.snapshots() != null) plugin.snapshots().command(s, r); }
             case "broadcast", "bc" -> {
                 if (!need(s, "usmp.admin.broadcast") || r.length == 0) return;
                 Msg.broadcast("admin.broadcast", "&c&l[Объявление] &f{m}", "m", String.join(" ", r));
@@ -529,6 +530,7 @@ public final class AdminService implements Module, Listener {
                 {"usmp.mod.vanish", "/usmp vanish"},
                 {"usmp.mod.tp", "/usmp tp <игрок>"},
                 {"usmp.mod.invsee", "/usmp invsee|endersee <игрок>"},
+                {"usmp.mod.invsee", "/usmp inv <игрок> — снимки инвентаря: посмотреть и вернуть вещи"},
                 {"usmp.admin.auth", "/usmp auth reset|unlock|unregister|revoke <ник>"},
                 {"usmp.mod.logs", "/usmp lookup <игрок> [категория] [время]"},
                 {"usmp.admin.broadcast", "/usmp bc <текст>"},
@@ -710,7 +712,7 @@ public final class AdminService implements Module, Listener {
 
     private List<String> tab(CommandSender s, String[] a) {
         if (a.length == 1) return new ArrayList<>(List.of("help", "reload", "status", "panel", "setup", "setspawn", "setlobby", "maintenance", "backup", "role", "money",
-                "item", "npc", "event", "nether", "end", "clanpoint", "ench", "lag", "bounty", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
+                "item", "npc", "event", "nether", "end", "clanpoint", "ench", "lag", "bounty", "rollback", "inspect", "vanish", "tp", "invsee", "endersee", "inv", "auth", "lookup", "broadcast", "gm", "structure", "fun", "sign", "dump", "dev"));
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) return switch (sub) {
             case "backup" -> List.of("now", "list", "verify", "restore", "cancel");

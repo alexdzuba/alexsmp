@@ -309,11 +309,13 @@ public final class DuelService implements Module, Listener {
     public void leave(Player p) {
         if (inMatch(p)) { Msg.error(p, "duels.in-match", "Нельзя выйти во время боя."); return; }
         leaveQueues(p);
-        p.getInventory().clear();
+        // Чистим только вещи дуэлей: если игрок попал сюда телепортом (без сохранения), его вещи SMP остаются при нём.
+        purgeDuelItems(p);
         restoreFromDb(p, () -> plugin.lobby().toLobby(p));
     }
 
     private void prepareHub(Player p) {
+        if (!stashCache.containsKey(p.getUniqueId())) return; // вещи не сохранены — не затираем
         PlayerInventory inv = p.getInventory();
         inv.clear();
         for (PotionEffect e : p.getActivePotionEffects()) p.removePotionEffect(e.getType());
@@ -384,8 +386,16 @@ public final class DuelService implements Module, Listener {
 
     // ------------------------------------------------------------------ Очереди и вызовы
 
+    /** Вещи SMP сохранены (игрок вошёл через /duels). Без этого бой не начинается — иначе набор затёр бы инвентарь. */
+    private boolean stashed(Player p) {
+        if (stashCache.containsKey(p.getUniqueId())) return true;
+        Msg.error(p, "duels.no-stash", "Вы попали в мир дуэлей телепортом — ваши вещи не сохранены. Выйдите (/lobby) и войдите через /duels.");
+        return false;
+    }
+
     private void joinQueue(Player p, Kit k) {
         if (!isDuelWorld(p.getWorld())) { Msg.error(p, "duels.not-in", "Сначала войдите в режим дуэлей."); return; }
+        if (!stashed(p)) return;
         if (inMatch(p)) return;
         Deque<UUID> q = queues.computeIfAbsent(k.id(), x -> new ArrayDeque<>());
         if (q.contains(p.getUniqueId())) {
@@ -435,6 +445,8 @@ public final class DuelService implements Module, Listener {
             return;
         }
         if (inMatch(t)) { Msg.error(p, "duels.target-busy", "Игрок сейчас в бою."); return; }
+        if (!stashed(p)) return;
+        if (!stashCache.containsKey(t.getUniqueId())) { Msg.error(p, "duels.target-no-stash", "Этот игрок не может драться: он попал в мир дуэлей телепортом."); return; }
         challenges.put(t.getUniqueId(), new Challenge(p.getUniqueId(), t.getUniqueId(), k.id(), System.currentTimeMillis() + 60_000));
         Msg.ok(p, "duels.challenge-sent", "Вызов отправлен {t} ({k}&a).", "t", t.getName(), "k", k.name());
         Msg.send(t, "duels.challenge", "&e{p}&f вызывает вас на дуэль: &r{k}&f. &a/duel accept &fили &c/duel deny &7(60 сек.)", "p", p.getName(), "k", k.name());
@@ -450,6 +462,7 @@ public final class DuelService implements Module, Listener {
             Msg.error(t, "duels.challenge-invalid", "Вызов больше недействителен.");
             return;
         }
+        if (!stashed(t) || !stashCache.containsKey(p.getUniqueId())) return;
         Arena a = freeArena();
         if (a == null) { Msg.error(t, "duels.no-arena", "Все арены заняты, попробуйте через минуту."); return; }
         leaveQueues(p);
@@ -505,6 +518,7 @@ public final class DuelService implements Module, Listener {
     private int matchSeconds() { return cfg().getInt("match-seconds", 300); }
 
     private void giveKit(Player p, Kit k) {
+        if (!stashCache.containsKey(p.getUniqueId())) return; // вещи не сохранены — не затираем
         PlayerInventory inv = p.getInventory();
         inv.clear();
         for (PotionEffect e : p.getActivePotionEffects()) p.removePotionEffect(e.getType());
@@ -812,7 +826,7 @@ public final class DuelService implements Module, Listener {
         Match m = matches.get(p.getUniqueId());
         if (m != null) finish(m, m.other(p), "quit");
         if (isDuelWorld(p.getWorld())) {
-            p.getInventory().clear();
+            purgeDuelItems(p);
             if (stashCache.containsKey(p.getUniqueId())) restoreNow(p);
             p.teleport(plugin.lobby().spawn());
         }

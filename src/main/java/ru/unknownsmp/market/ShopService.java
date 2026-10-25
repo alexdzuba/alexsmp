@@ -551,6 +551,8 @@ public final class ShopService implements Module {
                                 List.of("&7Цена: &6" + Text.money(plugin.chunkLoaders().price())), () -> plugin.chunkLoaders().buy(viewer)));
                 if (plugin.enchants() != null && plugin.enchants().shopEnabled()) set(34, Items.of(Material.NETHER_STAR).name("&5Особые чары")
                         .lore("&7Автоплавка, Бур, Лесоруб, Вампиризм и другие", "", "&eОткрыть").build(), cl -> plugin.enchants().openShop(viewer, this));
+                if (plugin.spawners() != null && plugin.spawners().enabled()) set(33, Items.of(Material.SPAWNER).name("&eСпавнеры")
+                        .lore("&7Пустые спавнеры и яйца мобов", "", "&eОткрыть").build(), cl -> plugin.spawners().open(viewer, this));
                 if (booksEnabled) set(28, Items.of(Material.ENCHANTED_BOOK).name("&dКниги чар").lore("&7Любые чары любого уровня", "", "&eОткрыть").build(),
                         cl -> openBooks(viewer, this));
                 if (parent != null) parent(parent);

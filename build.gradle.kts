@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "ru.unknownsmp"
-version = "2.15.1"
+version = "2.16.0"
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))

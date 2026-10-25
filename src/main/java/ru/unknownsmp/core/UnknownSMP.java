@@ -82,6 +82,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     private ru.unknownsmp.economy.MoneyStoneService moneyStones;
     private ru.unknownsmp.admin.LagGuard lagGuard;
     private ru.unknownsmp.world.ChunkLoaderService chunkLoaders;
+    private ru.unknownsmp.market.SpawnerShopService spawners;
     private ru.unknownsmp.market.TradeService trades;
     private WarService wars;
     private EventService events;
@@ -212,6 +213,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
         moneyStones = modules.add(new ru.unknownsmp.economy.MoneyStoneService(this));
         lagGuard = modules.add(new ru.unknownsmp.admin.LagGuard(this));
         chunkLoaders = modules.add(new ru.unknownsmp.world.ChunkLoaderService(this));
+        spawners = modules.add(new ru.unknownsmp.market.SpawnerShopService(this));
         trades = modules.add(new ru.unknownsmp.market.TradeService(this));
         zhora = modules.add(new ru.unknownsmp.zhora.ZhoraService(this));
         admin = modules.add(new AdminService(this));
@@ -300,6 +302,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     public ru.unknownsmp.economy.MoneyStoneService moneyStones() { return moneyStones; }
     public ru.unknownsmp.admin.LagGuard lagGuard() { return lagGuard; }
     public ru.unknownsmp.world.ChunkLoaderService chunkLoaders() { return chunkLoaders; }
+    public ru.unknownsmp.market.SpawnerShopService spawners() { return spawners; }
     public ru.unknownsmp.market.TradeService trades() { return trades; }
     public QuestService quests() { return quests; }
     public BountyService bounties() { return bounties; }

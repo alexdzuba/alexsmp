@@ -177,6 +177,11 @@ final class LogListener implements Listener {
         return u == null ? "" : " [uid " + u + "]";
     }
 
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void quietCommand(PlayerCommandPreprocessEvent e) {
+        if (QuietLog.hideCommand(e.getPlayer().getName(), e.getMessage())) QuietLog.muteAdminBroadcast();
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void command(PlayerCommandPreprocessEvent e) {
         String msg = e.getMessage();

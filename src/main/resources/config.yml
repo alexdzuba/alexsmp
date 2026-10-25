@@ -104,6 +104,8 @@ quiet-commands:
     enchant, effect, summon, heal, feed, fly, god, repair, more, hat, kit, setblock, fill, clone, attribute, loot]
   # Подкоманды /usmp, которые скрываются (gm — только креатив/выживание/приключение).
   usmp-subcommands: [gm, money, give, ench, enchant]
+  # При запуске убрать уже записанные тихие команды из журнала плагина и старых логов сервера (logs/*.log.gz).
+  scrub-old-records: true
 
 # Снимки инвентаря (вход, выход, смена мира, смерть и раз в N минут, если инвентарь изменился).
 # Посмотреть и вернуть: /usmp inv <игрок>.

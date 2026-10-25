@@ -58,6 +58,7 @@ public final class LogService implements Module, Listener {
         active = true;
         QuietLog.configure(plugin.configs().main());
         Tasks.timer(40, 40, this::flush);
+        if (plugin.configs().main().getBoolean("quiet-commands.scrub-old-records", true)) Tasks.async(this::scrubQuiet);
         Tasks.asyncTimer(20 * 60 * 5, 20 * 60 * 60 * 6, this::cleanup);
         Bukkit.getPluginManager().registerEvents(new LogListener(plugin, this), plugin);
     }
@@ -72,6 +73,58 @@ public final class LogService implements Module, Listener {
         QuietLog.shutdown();
         flush();
         active = false;
+    }
+
+    /**
+     * Убирает из журнала плагина и из старых лог-файлов сервера (logs/*.log.gz) записи тихих команд,
+     * сделанные до включения фильтра. latest.log не трогаем — он открыт сервером; после перезапуска он станет .log.gz и почистится.
+     */
+    private void scrubQuiet() {
+        if (QuietLog.players().isEmpty()) return;
+        try {
+            int n = plugin.db().queryBlocking(c -> {
+                List<Long> ids = new ArrayList<>();
+                try (PreparedStatement ps = c.prepareStatement("SELECT id, name, category, action, details FROM action_log WHERE category IN ('command','admin')");
+                     ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        if (QuietLog.hideAction(rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5))) ids.add(rs.getLong(1));
+                    }
+                }
+                for (Long id : ids) Database.update(c, "DELETE FROM action_log WHERE id=?", id);
+                return ids.size();
+            });
+            if (n > 0) plugin.getLogger().info("Журнал: убрано старых записей: " + n);
+        } catch (Exception ex) {
+            plugin.getLogger().warning("Не удалось почистить журнал: " + ex.getMessage());
+        }
+        java.io.File dir = new java.io.File(Bukkit.getWorldContainer(), "logs");
+        java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".log.gz"));
+        if (files == null) return;
+        int changedFiles = 0;
+        for (java.io.File f : files) {
+            try {
+                List<String> keep = new ArrayList<>();
+                boolean changed = false;
+                try (var in = new java.io.BufferedReader(new java.io.InputStreamReader(new java.util.zip.GZIPInputStream(new java.io.FileInputStream(f)), java.nio.charset.StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        if (QuietLog.hideFileLine(line)) changed = true; else keep.add(line);
+                    }
+                }
+                if (!changed) continue;
+                java.io.File tmp = new java.io.File(f.getPath() + ".tmp");
+                try (var out = new java.io.PrintWriter(new java.io.OutputStreamWriter(new java.util.zip.GZIPOutputStream(new java.io.FileOutputStream(tmp)), java.nio.charset.StandardCharsets.UTF_8))) {
+                    for (String l : keep) out.println(l);
+                }
+                long mod = f.lastModified();
+                java.nio.file.Files.move(tmp.toPath(), f.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                f.setLastModified(mod);
+                changedFiles++;
+            } catch (Exception ex) {
+                plugin.getLogger().warning("Не удалось почистить " + f.getName() + ": " + ex.getMessage());
+            }
+        }
+        if (changedFiles > 0) plugin.getLogger().info("Почищено лог-файлов: " + changedFiles);
     }
 
     public void log(Player p, String category, String action, Location l, String details) {

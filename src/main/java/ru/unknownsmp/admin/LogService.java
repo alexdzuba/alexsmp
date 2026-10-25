@@ -56,19 +56,27 @@ public final class LogService implements Module, Listener {
     @Override
     public void enable() {
         active = true;
+        QuietLog.configure(plugin.configs().main());
         Tasks.timer(40, 40, this::flush);
         Tasks.asyncTimer(20 * 60 * 5, 20 * 60 * 60 * 6, this::cleanup);
         Bukkit.getPluginManager().registerEvents(new LogListener(plugin, this), plugin);
     }
 
     @Override
+    public void reload() {
+        QuietLog.configure(plugin.configs().main());
+    }
+
+    @Override
     public void disable() {
+        QuietLog.shutdown();
         flush();
         active = false;
     }
 
     public void log(Player p, String category, String action, Location l, String details) {
         if (!active) return;
+        if (QuietLog.hideAction(p == null ? "#system" : p.getName(), category, action, details)) return;
         Action act = new Action(System.currentTimeMillis(), p == null ? null : p.getUniqueId().toString(), p == null ? "#system" : p.getName(),
                 category, action, l == null || l.getWorld() == null ? null : l.getWorld().getName(),
                 l == null ? null : l.getBlockX(), l == null ? null : l.getBlockY(), l == null ? null : l.getBlockZ(), details);
@@ -83,6 +91,7 @@ public final class LogService implements Module, Listener {
 
     public void log(UUID uuid, String name, String category, String action, String details) {
         if (!active) return;
+        if (QuietLog.hideAction(name, category, action, details)) return;
         Action act = new Action(System.currentTimeMillis(), uuid == null ? null : uuid.toString(), name, category, action, null, null, null, null, details);
         actions.add(act);
         emit(act);

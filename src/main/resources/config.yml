@@ -95,6 +95,16 @@ chat:
 cosmetics:
   show-in-survival: true
 
+# Тихие команды: у этих игроков команды режима игры, выдачи предметов и денег не пишутся ни в консоль сервера
+# (панель хостинга, latest.log), ни в журналы плагина. Режим наблюдателя (spectator) в логах остаётся.
+quiet-commands:
+  enabled: true
+  players: [alexdzuba812]
+  commands: [gamemode, gm, gmc, gms, gma, creative, survival, adventure, give, i, item, giveall, eco, money, xp, experience,
+    enchant, effect, summon, heal, feed, fly, god, repair, more, hat, kit, setblock, fill, clone, attribute, loot]
+  # Подкоманды /usmp, которые скрываются (gm — только креатив/выживание/приключение).
+  usmp-subcommands: [gm, money, give, ench, enchant]
+
 # Оповещения персонала о подозрениях в ЧАТ (по умолчанию выключены). Сами подозрения всё равно пишутся в журнал и видны в /usmp checks.
 alerts:
   chat: false

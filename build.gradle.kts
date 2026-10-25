@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "ru.unknownsmp"
-version = "2.16.1"
+version = "2.16.2"
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
@@ -21,6 +21,8 @@ val bundle: Configuration by configurations.creating {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    // Фильтр консоли (тихие команды). На сервере log4j-core уже есть в ядре Paper.
+    compileOnly("org.apache.logging.log4j:log4j-core:2.24.3")
     // SQLite JDBC уже входит в состав сервера Paper.
     compileOnly("org.xerial:sqlite-jdbc:3.47.1.0")
     compileOnly("com.zaxxer:HikariCP:6.2.1")

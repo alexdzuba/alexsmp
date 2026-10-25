@@ -71,14 +71,56 @@ public final class BackupService implements Module {
 
     @Override
     public void enable() {
-        long hours = Math.max(1, cfg().getLong("backup.interval-hours", 6));
-        long ticks = hours * 3600L * 20L;
-        Tasks.timer(ticks, ticks, () -> create("auto", null));
+        // Раньше первая копия делалась только через interval-hours после запуска — при частых перезапусках её не было никогда.
+        // Теперь через 3 минуты после запуска и дальше каждые 10 минут проверяем, сколько прошло с последней удачной копии.
+        Tasks.timer(20L * 60 * 3, 20L * 60 * 10, this::autoCheck);
         File dir = dir();
         dir.mkdirs();
         if (!new File(cfg().getString("backup.directory", "backups")).isAbsolute()) {
             plugin.getLogger().warning("[Резервные копии] Копии хранятся на том же диске, что и сервер (" + dir.getPath()
                     + "). Это не защищает от отказа диска — регулярно выгружайте папку backups во внешнее хранилище.");
+        }
+    }
+
+    private void autoCheck() {
+        if (running.get()) return;
+        long hours = Math.max(1, cfg().getLong("backup.interval-hours", 6));
+        if (System.currentTimeMillis() - newestOkTime() >= hours * 3_600_000L) create("auto", null);
+    }
+
+    /** Время последней удачной копии (0 — ни одной). */
+    public long newestOkTime() {
+        long best = 0;
+        for (File f : list()) {
+            File mf = new File(f, "manifest.properties");
+            if (mf.exists() && !new File(f, "FAILED.txt").exists()) best = Math.max(best, mf.lastModified());
+        }
+        return best;
+    }
+
+    private static long folderSize(Path p) {
+        try (var st = Files.walk(p)) {
+            return st.filter(Files::isRegularFile).mapToLong(x -> { try { return Files.size(x); } catch (IOException e) { return 0; } }).sum();
+        } catch (IOException e) {
+            return 0;
+        }
+    }
+
+    /** Нужно ~2 размера миров (копия + архив). Если места мало — удаляем самые старые копии, но одну удачную оставляем. */
+    private void ensureSpace(List<World> worlds, File target) throws IOException {
+        long need = 0;
+        for (World w : worlds) need += folderSize(w.getWorldFolder().toPath());
+        need = need * 2 + 50L * 1048576;
+        List<File> all = list();
+        all.remove(target);
+        for (int i = all.size() - 1; i >= 1 && dir().getUsableSpace() < need; i--) {
+            deleteDir(all.get(i).toPath());
+            plugin.getLogger().warning("[Резервные копии] Мало места — удалена старая копия " + all.get(i).getName());
+        }
+        long free = dir().getUsableSpace();
+        if (free < need) {
+            throw new IOException("мало места на диске: нужно ~" + need / 1048576 + " МБ, свободно " + free / 1048576
+                    + " МБ. Уменьшите backup.keep, исключите лишние миры (backup.worlds) или освободите место на хостинге");
         }
     }
 
@@ -136,6 +178,7 @@ public final class BackupService implements Module {
                     File staging = new File(target, "staging");
                     try {
                         zipConfigs(new File(target, "config.zip"));
+                        if (!list.isEmpty()) ensureSpace(list, target);
                         if (!list.isEmpty()) {
                             for (World w : list) copyDir(w.getWorldFolder().toPath(), new File(staging, w.getName()).toPath());
                         }
@@ -173,7 +216,17 @@ public final class BackupService implements Module {
     private void finish(File target, boolean ok, String info, CommandSender who) {
         running.set(false);
         if (!ok) {
+            // Недоделанные файлы только занимают место — оставляем лишь пояснение.
+            File[] partial = target.listFiles();
+            if (partial != null) for (File f : partial) if (f.isFile()) f.delete();
             try { Files.writeString(new File(target, "FAILED.txt").toPath(), info, StandardCharsets.UTF_8); } catch (IOException ignored) {}
+            plugin.getLogger().warning("[Резервные копии] НЕ УДАЛОСЬ: " + info);
+            Tasks.sync(() -> {
+                for (org.bukkit.entity.Player p : Bukkit.getOnlinePlayers())
+                    if (p != who && plugin.roles().has(p, "usmp.admin.backup")) Msg.error(p, "backup.failed", "Резервное копирование не удалось: {i}", "i", info);
+            });
+        } else {
+            plugin.getLogger().info("[Резервные копии] Готово: " + info);
         }
         plugin.monitor().backupResult(ok, info);
         plugin.logs().sys("admin", ok ? "backup_ok" : "backup_fail", null, target.getName() + ": " + info);

@@ -498,7 +498,7 @@ public final class ClanService implements Module {
         plugin.commands().add("clan").player().perm("usmp.player.clan").module("clans").cat("Кланы")
                 .usage("/clan [create|invite|accept|leave|kick|deposit|withdraw|home|sethome|claim|points|ally|war|info|disband]").desc("Кланы (GUI)")
                 .exec((s, a) -> command((Player) s, a)).tab((s, a) -> {
-                    if (a.length == 1) return List.of("create", "invite", "accept", "leave", "kick", "deposit", "withdraw", "home", "sethome", "claim", "points", "ally", "unally", "war", "peace", "info", "leader", "disband");
+                    if (a.length == 1) return List.of("create", "invite", "accept", "leave", "kick", "deposit", "withdraw", "home", "sethome", "claim", "points", "level", "chest", "ally", "unally", "war", "peace", "info", "leader", "disband");
                     if (a.length == 2 && a[0].equalsIgnoreCase("claim")) return List.of("wand", "pos1", "pos2", "buy", "list", "show", "info", "remove");
                     if (a.length == 2 && List.of("invite", "kick", "leader").contains(a[0].toLowerCase())) return Commands.players(a[1]);
                     if (a.length == 2 && List.of("ally", "unally", "war", "peace", "info").contains(a[0].toLowerCase())) {
@@ -549,6 +549,12 @@ public final class ClanService implements Module {
             case "sethome" -> setHome(p);
             case "claim", "land" -> { if (plugin.claims() != null) plugin.claims().command(p, a); }
             case "points" -> { if (plugin.points() != null) plugin.points().menu(p, null); }
+            case "level", "upgrade" -> {
+                Clan cl = clanOf(p);
+                if (cl == null) { Msg.error(p, "clan.none", "Вы не состоите в клане."); return; }
+                if (plugin.clanLevels() != null) plugin.clanLevels().menu(p, cl, null);
+            }
+            case "chest" -> { if (plugin.clanLevels() != null) plugin.clanLevels().openChest(p); }
             case "ally" -> { if (a.length < 2) return; requestAlly(p, byTag(a[1])); }
             case "unally" -> { if (a.length < 2) return; breakAlly(p, byTag(a[1])); }
             case "war" -> { if (a.length < 2) { menus.wars(p, null); return; } plugin.wars().declare(p, byTag(a[1])); }

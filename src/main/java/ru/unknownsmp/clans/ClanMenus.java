@@ -122,6 +122,14 @@ public final class ClanMenus {
                 if (plugin.points() != null) set(33, Items.of(Material.BEACON).name("&6Точки заработка").lore("&7Захватывайте точки — они платят",
                         "&7в банк клана каждые несколько минут").build(), c -> plugin.points().menu(viewer, this));
                 if (leader) set(31, Items.of(Material.COMPARATOR).name("&6Права ролей").lore("&7Настройка прав офицеров и участников").build(), c -> perms(viewer, cl, this));
+                if (plugin.clanLevels() != null && plugin.clanLevels().enabled()) {
+                    int lv = plugin.clanLevels().level(cl);
+                    set(11, Items.of(Material.EXPERIENCE_BOTTLE).name("&aУровень клана: &f" + lv)
+                            .lore("&7Больше территории, бафы на базе,", "&7клановый сундук", "", "&eОткрыть").build(), c -> plugin.clanLevels().menu(viewer, cl, this));
+                    set(15, Items.of(Material.ENDER_CHEST).name("&6Сундук клана")
+                            .lore(plugin.clanLevels().info(cl).chestRows() > 0 ? "&7Общий сундук для всего клана" : "&7Открывается на уровне клана 2").build(),
+                            c -> plugin.clanLevels().openChest(viewer));
+                }
                 set(38, Items.of(Material.OAK_DOOR).name("&cПокинуть клан").build(), c -> confirmLeave(viewer));
                 if (leader) set(42, Items.of(Material.TNT).name("&4Распустить клан").lore("&7Средства банка вернутся лидеру").build(), c -> confirmDisband(viewer, cl));
                 if (parent != null) parent(parent);

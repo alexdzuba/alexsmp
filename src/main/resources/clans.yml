@@ -64,3 +64,16 @@ points:
   income-minutes: 10
   # Платить, только если в сети есть хотя бы один участник клана.
   require-online-member: true
+
+# ------------------------------------------------------------
+#  Уровни клана (/clan level). Покупаются лидером из банка клана.
+#  area-bonus — +% к общей площади территорий, claims-bonus — дополнительные территории,
+#  chest-rows — рядов в клановом сундуке (/clan chest), effects — бафы на своей территории (уровень I).
+# ------------------------------------------------------------
+levels:
+  enabled: true
+  list:
+    2: {price: 1000000, area-bonus: 50, claims-bonus: 1, chest-rows: 3, effects: [haste]}
+    3: {price: 3000000, area-bonus: 100, claims-bonus: 2, chest-rows: 3, effects: [haste, regeneration]}
+    4: {price: 7000000, area-bonus: 150, claims-bonus: 3, chest-rows: 6, effects: [haste, regeneration, speed]}
+    5: {price: 15000000, area-bonus: 200, claims-bonus: 4, chest-rows: 6, effects: [haste, regeneration, speed, resistance]}

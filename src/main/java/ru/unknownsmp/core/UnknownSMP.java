@@ -85,6 +85,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     private ru.unknownsmp.market.SpawnerShopService spawners;
     private ru.unknownsmp.admin.InventorySnapshotService snapshots;
     private ru.unknownsmp.market.CaseService cases;
+    private ru.unknownsmp.clans.ClanLevelService clanLevels;
     private ru.unknownsmp.market.TradeService trades;
     private WarService wars;
     private EventService events;
@@ -218,6 +219,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
         spawners = modules.add(new ru.unknownsmp.market.SpawnerShopService(this));
         snapshots = modules.add(new ru.unknownsmp.admin.InventorySnapshotService(this));
         cases = modules.add(new ru.unknownsmp.market.CaseService(this));
+        clanLevels = modules.add(new ru.unknownsmp.clans.ClanLevelService(this));
         trades = modules.add(new ru.unknownsmp.market.TradeService(this));
         zhora = modules.add(new ru.unknownsmp.zhora.ZhoraService(this));
         admin = modules.add(new AdminService(this));
@@ -309,6 +311,7 @@ public final class UnknownSMP extends JavaPlugin implements Listener {
     public ru.unknownsmp.market.SpawnerShopService spawners() { return spawners; }
     public ru.unknownsmp.admin.InventorySnapshotService snapshots() { return snapshots; }
     public ru.unknownsmp.market.CaseService cases() { return cases; }
+    public ru.unknownsmp.clans.ClanLevelService clanLevels() { return clanLevels; }
     public ru.unknownsmp.market.TradeService trades() { return trades; }
     public QuestService quests() { return quests; }
     public BountyService bounties() { return bounties; }

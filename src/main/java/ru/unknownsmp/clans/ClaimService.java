@@ -198,6 +198,16 @@ public final class ClaimService implements Module, Listener {
         return s;
     }
 
+    /** Общая площадь с учётом уровня клана. */
+    public long totalAreaFor(Clan cl) {
+        int bonus = plugin.clanLevels() == null ? 0 : plugin.clanLevels().areaBonus(cl);
+        return maxTotalArea * (100 + bonus) / 100;
+    }
+
+    public int claimsFor(Clan cl) {
+        return maxClaims + (plugin.clanLevels() == null ? 0 : plugin.clanLevels().claimsBonus(cl));
+    }
+
     public boolean isInsideOwnClaim(Player p, Location l) {
         Claim c = claimAt(l);
         Clan cl = plugin.clans().clanOf(p);
@@ -552,8 +562,8 @@ public final class ClaimService implements Module, Listener {
         if (dx > maxSide || dz > maxSide) return "Сторона территории — не больше " + maxSide + " блоков.";
         long area = (long) dx * dz;
         if (area > maxArea) return "Слишком большая территория: максимум " + Text.num(maxArea) + " блоков за раз.";
-        if (claimsOf(cl.id).size() >= maxClaims) return "У клана уже максимум территорий (" + maxClaims + ").";
-        if (areaOf(cl.id) + area > maxTotalArea) return "Превышена общая площадь клана: максимум " + Text.num(maxTotalArea) + " блоков.";
+        if (claimsOf(cl.id).size() >= claimsFor(cl)) return "У клана уже максимум территорий (" + claimsFor(cl) + "). Больше — на новом уровне клана: /clan level";
+        if (areaOf(cl.id) + area > totalAreaFor(cl)) return "Превышена общая площадь клана: максимум " + Text.num(totalAreaFor(cl)) + " блоков. Больше — на новом уровне клана: /clan level";
         for (Claim c : claims.values()) if (c.overlaps(w, x1, z1, x2, z2)) {
             Clan o = plugin.clans().byId(c.clanId());
             return "Пересекается с территорией клана [" + (o == null ? "?" : o.tag) + "].";
@@ -687,7 +697,7 @@ public final class ClaimService implements Module, Listener {
         Clan cl = plugin.clans().clanOf(p);
         if (cl == null) { Msg.error(p, "clan.none", "Вы не состоите в клане."); return; }
         List<Claim> list = claimsOf(cl.id);
-        Msg.raw(p, "&8--- &dТерритории [" + cl.tag + "] &7(" + list.size() + "/" + maxClaims + ", " + Text.num(areaOf(cl.id)) + "/" + Text.num(maxTotalArea) + " блоков) &8---");
+        Msg.raw(p, "&8--- &dТерритории [" + cl.tag + "] &7(" + list.size() + "/" + claimsFor(cl) + ", " + Text.num(areaOf(cl.id)) + "/" + Text.num(totalAreaFor(cl)) + " блоков) &8---");
         for (Claim c : list) Msg.raw(p, "&e#" + c.id() + " &f" + c.describe() + " &7(" + c.world() + ")");
         if (list.isEmpty()) Msg.raw(p, "&7Территорий нет. Выделите участок жезлом: &e/clan claim wand");
     }
@@ -721,7 +731,7 @@ public final class ClaimService implements Module, Listener {
                     command(viewer, new String[]{"claim", "wand"});
                 });
                 set(12, Items.of(Material.EMERALD).name("&aКупить выделенное").lore("&7Оплата из банка клана: &6" + Text.money(cl.bank),
-                        "&7Территорий: &f" + list.size() + "/" + maxClaims, "&7Площадь: &f" + Text.num(areaOf(cl.id)) + "/" + Text.num(maxTotalArea)).build(), c -> buy(viewer));
+                        "&7Территорий: &f" + list.size() + "/" + claimsFor(cl), "&7Площадь: &f" + Text.num(areaOf(cl.id)) + "/" + Text.num(totalAreaFor(cl))).build(), c -> buy(viewer));
                 set(14, Items.of(Material.MAP).name("&eСписок территорий").lore("&7Номера, размеры, координаты").build(), c -> { viewer.closeInventory(); list(viewer); });
                 set(16, Items.of(Material.SPYGLASS).name("&bПоказать границы").lore("&7Подсветить территории рядом на 10 секунд").build(), c -> { viewer.closeInventory(); show(viewer); });
                 set(4, Items.of(Material.RED_BED).name("&dКлановая база").lore("&7Точка клана ставится на вашей территории:",

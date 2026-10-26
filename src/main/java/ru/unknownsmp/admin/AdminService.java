@@ -52,6 +52,7 @@ public final class AdminService implements Module, Listener {
         Tasks.later(100, () -> structures().autoPlace());
         Tasks.timer(100, 40, this::spoofSpectators);
         Bukkit.getPluginManager().registerEvents(this, plugin);
+        Bukkit.getPluginManager().registerEvents(new CreativeDisguise(plugin, this), plugin);
         plugin.commands().add("unknownsmp").perm("usmp.mod.base").cat("Администрирование").usage("/usmp <раздел> ...")
                 .desc("Администрирование сервера (без аргументов — панель)").exec(this::command).tab(this::tab);
     }

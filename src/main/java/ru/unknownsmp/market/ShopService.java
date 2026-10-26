@@ -553,6 +553,10 @@ public final class ShopService implements Module {
                         .lore("&7Автоплавка, Бур, Лесоруб, Вампиризм и другие", "", "&eОткрыть").build(), cl -> plugin.enchants().openShop(viewer, this));
                 if (plugin.spawners() != null && plugin.spawners().enabled()) set(33, Items.of(Material.SPAWNER).name("&eСпавнеры")
                         .lore("&7Пустые спавнеры и яйца мобов", "", "&eОткрыть").build(), cl -> plugin.spawners().open(viewer, this));
+                if (plugin.cases() != null && plugin.cases().casesEnabled()) set(27, Items.of(Material.ENDER_CHEST).name("&6Кейсы")
+                        .lore("&7Испытай удачу: деньги, незерит, особые чары", "", "&eОткрыть").build(), cl -> plugin.cases().open(viewer, this));
+                if (plugin.cases() != null && plugin.cases().lotteryEnabled()) set(35, Items.of(Material.SUNFLOWER).name("&6Лотерея")
+                        .lore("&7Розыгрыш банка каждый день", "", "&eОткрыть").build(), cl -> plugin.cases().lotteryMenu(viewer, this));
                 if (booksEnabled) set(28, Items.of(Material.ENCHANTED_BOOK).name("&dКниги чар").lore("&7Любые чары любого уровня", "", "&eОткрыть").build(),
                         cl -> openBooks(viewer, this));
                 if (parent != null) parent(parent);

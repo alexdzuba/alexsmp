@@ -105,6 +105,10 @@ public final class Migrations {
                     // v7: снимки инвентаря игроков.
                     "CREATE TABLE IF NOT EXISTS inv_snapshots (id {ID}, uuid TEXT NOT NULL, name TEXT, at BIGINT NOT NULL, reason TEXT, data {BLOB} NOT NULL, xp_level INTEGER, items INTEGER)",
                     "CREATE INDEX IF NOT EXISTS idx_invsnap_uuid ON inv_snapshots(uuid, at)",
+            },
+            new String[]{
+                    // v8: лотерея.
+                    "CREATE TABLE IF NOT EXISTS lottery_tickets (uuid TEXT PRIMARY KEY, name TEXT, tickets BIGINT NOT NULL)",
             }
     );
 
@@ -165,5 +169,5 @@ public final class Migrations {
             "clan_allies", "clan_bank_log", "wars", "war_blocks", "unique_items", "world_state", "quest_progress",
             "bounties", "event_history", "collective", "punishments", "reports", "block_log", "action_log", "parkour", "duel_stash", "sell_quota",
             "zhora_memory", "zhora_mute", "chronicle", "zhora_complaints", "zhora_cases", "zhora_evidence", "zhora_chat",
-            "clan_claims", "clan_points", "money_stones", "chunk_loaders", "inv_snapshots"};
+            "clan_claims", "clan_points", "money_stones", "chunk_loaders", "inv_snapshots", "lottery_tickets"};
 }

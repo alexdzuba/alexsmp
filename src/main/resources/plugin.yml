@@ -33,6 +33,8 @@ commands:
   balance: {description: Баланс, aliases: [bal, money]}
   pay: {description: Перевод денег}
   trade: {description: Обмен с игроком, aliases: [обмен]}
+  cases: {description: Кейсы, aliases: [кейсы, case]}
+  lottery: {description: Лотерея, aliases: [лотерея, lotto]}
   mail: {description: Почта}
   shop: {description: Серверный магазин}
   sell: {description: Скупка предметов}

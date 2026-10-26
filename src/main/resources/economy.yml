@@ -92,3 +92,64 @@ spawners:
     MAGMA_CUBE: 4500000
     HUSK: 4800000
     ZOMBIE_VILLAGER: 5000000
+
+# ------------------------------------------------------------
+#  Кейсы (/cases) и лотерея (/lottery). Средняя выдача кейса меньше его цены — это «пылесос» лишних денег.
+#  Награда: "<вес> <что>". Что: money:<сумма>, MATERIAL:кол-во, ce:<особые чары>:<уровень>, potion:<id>, unique:<id>.
+#  Шанс = вес / сумма весов. Награды с шансом 2% и меньше объявляются всем.
+# ------------------------------------------------------------
+cases:
+  enabled: true
+  list:
+    common:
+      name: "&aОбычный кейс"
+      icon: CHEST
+      price: 50000
+      rewards:
+        - "30 money:20000"
+        - "20 money:40000"
+        - "15 DIAMOND:4"
+        - "12 EXPERIENCE_BOTTLE:32"
+        - "10 GOLDEN_APPLE:4"
+        - "8 money:80000"
+        - "4 ce:vampire:1"
+        - "1 money:250000"
+    rare:
+      name: "&bРедкий кейс"
+      icon: ENDER_CHEST
+      price: 250000
+      rewards:
+        - "30 money:100000"
+        - "20 money:180000"
+        - "15 DIAMOND_BLOCK:2"
+        - "12 NETHERITE_INGOT:1"
+        - "10 ENCHANTED_GOLDEN_APPLE:1"
+        - "7 ce:drill:1"
+        - "5 money:500000"
+        - "1 money:1500000"
+    legendary:
+      name: "&6Легендарный кейс"
+      icon: SHULKER_BOX
+      price: 1000000
+      rewards:
+        - "30 money:400000"
+        - "20 money:700000"
+        - "15 NETHERITE_INGOT:4"
+        - "12 ce:unbreakable:1"
+        - "10 TOTEM_OF_UNDYING:2"
+        - "6 ELYTRA:1"
+        - "5 money:2000000"
+        - "2 WITHER_SKELETON_SPAWN_EGG:1"
+        - "1 money:5000000"
+
+lottery:
+  enabled: true
+  ticket-price: 10000
+  # Максимум билетов у одного игрока на розыгрыш.
+  max-tickets: 1000
+  # Час розыгрыша (по времени сервера, zone в config.yml). Раз в день.
+  draw-hour: 20
+  # Минимум участников, иначе билеты переходят на следующий день.
+  min-players: 2
+  # Налог с банка (сгорает).
+  tax-percent: 10

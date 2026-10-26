@@ -115,6 +115,76 @@ public final class AdminService implements Module, Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void joinSpoof(PlayerJoinEvent e) {
         Tasks.later(30, this::spoofSpectators);
+        Player p = e.getPlayer();
+        Tasks.later(40, () -> {
+            if (!p.isOnline()) return;
+            // После перезапуска: дальность метки могла остаться нулевой — вернуть, если игрок не в наблюдателе.
+            var a = transmit(p);
+            if (p.getGameMode() == GameMode.SPECTATOR && freezeMarkerOn() && !isVanished(p) && plugin.roles().has(p, "usmp.mod.vanish")) {
+                frozenMarker.put(p.getUniqueId(), p.getLocation().clone());
+                if (a != null) a.setBaseValue(0);
+                Tasks.later(3, () -> showMarker(p));
+            } else if (a != null && a.getBaseValue() <= 0) {
+                a.setBaseValue(a.getDefaultValue());
+            }
+            showMarkersTo(p);
+        });
+    }
+
+    // ------------------------------------------------------------------ Метка на локаторе в режиме наблюдателя
+
+    /** Где персонал вошёл в режим наблюдателя: другие видят его метку на панели локатора именно там. */
+    private final java.util.Map<UUID, org.bukkit.Location> frozenMarker = new ConcurrentHashMap<>();
+
+    private boolean freezeMarkerOn() {
+        return plugin.configs().main().getBoolean("tab.freeze-spectator-marker", true);
+    }
+
+    private static org.bukkit.attribute.AttributeInstance transmit(Player p) {
+        try { return p.getAttribute(org.bukkit.attribute.Attribute.WAYPOINT_TRANSMIT_RANGE); } catch (Throwable t) { return null; }
+    }
+
+    private void showMarker(Player s) {
+        org.bukkit.Location at = frozenMarker.get(s.getUniqueId());
+        if (at == null || !s.isOnline()) return;
+        for (Player v : Bukkit.getOnlinePlayers()) if (v != s) WaypointSpoof.show(v, s, at);
+    }
+
+    private void showMarkersTo(Player v) {
+        for (var en : frozenMarker.entrySet()) {
+            Player s = Bukkit.getPlayer(en.getKey());
+            if (s != null && s != v) WaypointSpoof.show(v, s, en.getValue());
+        }
+    }
+
+    private void unfreezeMarker(Player p) {
+        if (frozenMarker.remove(p.getUniqueId()) == null) return;
+        for (Player v : Bukkit.getOnlinePlayers()) if (v != p) WaypointSpoof.hide(v, p.getUniqueId());
+        // Дальность возвращаем на следующем тике, когда режим уже сменился, — сервер снова покажет настоящую метку.
+        Tasks.later(1, () -> {
+            var a = transmit(p);
+            if (a != null && a.getBaseValue() <= 0) a.setBaseValue(a.getDefaultValue());
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void markerFreeze(org.bukkit.event.player.PlayerGameModeChangeEvent e) {
+        Player p = e.getPlayer();
+        if (e.getNewGameMode() == GameMode.SPECTATOR) {
+            if (!freezeMarkerOn() || isVanished(p) || !plugin.roles().has(p, "usmp.mod.vanish") || frozenMarker.containsKey(p.getUniqueId())) return;
+            frozenMarker.put(p.getUniqueId(), p.getLocation().clone());
+            var a = transmit(p);
+            if (a != null) a.setBaseValue(0);
+            Tasks.later(3, () -> showMarker(p));
+        } else {
+            unfreezeMarker(p);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void markerWorld(org.bukkit.event.player.PlayerChangedWorldEvent e) {
+        Player v = e.getPlayer();
+        Tasks.later(20, () -> { if (v.isOnline()) showMarkersTo(v); });
     }
 
     /** Фейерверки и куры из раздела троллинга безвредны. */
@@ -128,6 +198,11 @@ public final class AdminService implements Module, Listener {
 
     @EventHandler
     public void quit(PlayerQuitEvent e) {
+        if (frozenMarker.remove(e.getPlayer().getUniqueId()) != null) {
+            for (Player v : Bukkit.getOnlinePlayers()) if (v != e.getPlayer()) WaypointSpoof.hide(v, e.getPlayer().getUniqueId());
+            var a = transmit(e.getPlayer());
+            if (a != null && a.getBaseValue() <= 0) a.setBaseValue(a.getDefaultValue());
+        }
         vanished.remove(e.getPlayer().getUniqueId());
         inspecting.remove(e.getPlayer().getUniqueId());
     }
